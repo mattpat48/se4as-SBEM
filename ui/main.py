@@ -37,6 +37,16 @@ def get_mqtt_client():
                     c.external_config["sensors_per_type"] = payload["sensors_per_type"]
             elif msg.topic == "City/update/thresholds":
                 c.external_config["thresholds"] = payload.get("thresholds")
+            elif msg.topic == "City/update/policies":
+                c.external_config["policies"] = payload
+            elif msg.topic.startswith("City/update/rules/"):
+                # City/update/rules/<rulename>
+                try:
+                    parts = msg.topic.split('/')
+                    rulename = parts[3]
+                    c.external_config.setdefault("rules", {})[rulename] = payload
+                except Exception:
+                    pass
             elif msg.topic == "City/emergency":
                 c.external_config["active_emergency"] = payload
         except Exception:
@@ -78,6 +88,11 @@ if 'locations_list' not in st.session_state:
     st.session_state.locations_list = get_initial_config('locations', list(ds.LOCATIONS))
 if 'location_coords' not in st.session_state:
     st.session_state.location_coords = get_initial_config('location_coords', dict(ds.LOCATION_COORDS))
+if 'rules' not in st.session_state:
+    # rules stored under City/update/rules/<rulename>
+    st.session_state.rules = get_initial_config('rules', {})
+if 'policies' not in st.session_state:
+    st.session_state.policies = get_initial_config('policies', {})
 
 # =====================================================
 # SECTION 1: Location & Coordinates Management
@@ -246,6 +261,59 @@ with col3:
         if client:
             client.publish("City/update/config", json.dumps(payload), retain=True, qos=1)
             st.success("Sensor configuration updated!")
+
+# =====================================================
+# SECTION 2.5: Runtime Rules & Planner Policies
+# =====================================================
+st.divider()
+st.header("🧠 Runtime Rules & Planner Policies")
+st.caption("Edit composite-rule parameters and planner policies at runtime. Changes are published to MQTT (retained) and applied immediately.")
+
+rule_col1, rule_col2 = st.columns(2)
+
+with rule_col1:
+    st.subheader("Composite Rule Parameters")
+    # Fire risk params
+    fr = st.session_state.rules.get('fire_risk', {})
+    fr_slope = st.number_input("fire_risk: slope_threshold (°C/min)", value=float(fr.get('slope_threshold', 0.5)), key='fr_slope')
+    fr_hum = st.number_input("fire_risk: humidity_threshold (%)", value=float(fr.get('humidity_threshold', 40.0)), key='fr_hum')
+
+    co2r = st.session_state.rules.get('co2_persistence', {})
+    co2_thresh = st.number_input("co2_persistence: threshold (ppm)", value=float(co2r.get('threshold', ds.THRESHOLDS.get('co2', 1000.0))), key='co2_thresh')
+
+    noiser = st.session_state.rules.get('noise_anomaly', {})
+    noise_thresh = st.number_input("noise_anomaly: threshold (dB)", value=float(noiser.get('threshold', ds.THRESHOLDS.get('noise_level', 85.0))), key='noise_thresh')
+    spike_thresh = st.number_input("noise_anomaly: spike_threshold (dB)", value=float(noiser.get('spike_threshold', 8.0)), key='spike_thresh')
+
+    if st.button("Update Rules"):
+        # publish each rule as its own topic
+        if client:
+            client.publish("City/update/rules/fire_risk", json.dumps({"slope_threshold": fr_slope, "humidity_threshold": fr_hum}), retain=True, qos=1)
+            client.publish("City/update/rules/co2_persistence", json.dumps({"threshold": co2_thresh}), retain=True, qos=1)
+            client.publish("City/update/rules/noise_anomaly", json.dumps({"threshold": noise_thresh, "spike_threshold": spike_thresh}), retain=True, qos=1)
+            # update local cache for immediate UI feedback
+            client.external_config.setdefault('rules', {})['fire_risk'] = {"slope_threshold": fr_slope, "humidity_threshold": fr_hum}
+            client.external_config.setdefault('rules', {})['co2_persistence'] = {"threshold": co2_thresh}
+            client.external_config.setdefault('rules', {})['noise_anomaly'] = {"threshold": noise_thresh, "spike_threshold": spike_thresh}
+            st.success("Rules updated and published (retained).")
+        else:
+            st.error("MQTT not connected")
+
+with rule_col2:
+    st.subheader("Planner Policies")
+    pol = st.session_state.policies.get('planner', {}) if st.session_state.policies else {}
+    horizon = st.number_input("planner.horizon_seconds", value=int(pol.get('horizon_seconds', 300)), step=30, key='planner_horizon')
+    proactive_prob = st.number_input("planner.proactive_prob", value=float(pol.get('proactive_prob', 0.6)), min_value=0.0, max_value=1.0, key='planner_prob')
+
+    if st.button("Update Planner Policies"):
+        if client:
+            payload = {"planner": {"horizon_seconds": int(horizon), "proactive_prob": float(proactive_prob)}}
+            client.publish("City/update/policies", json.dumps(payload), retain=True, qos=1)
+            client.external_config['policies'] = payload
+            st.success("Planner policies updated (retained).")
+        else:
+            st.error("MQTT not connected")
+
 
 # --- System Status ---
 st.divider()

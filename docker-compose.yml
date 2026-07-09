@@ -146,6 +146,21 @@ services:
     volumes:
       - ./datastructure.py:/app/datastructure.py
 
+  # 8. Planner Container (Decision/Planner)
+  planner:
+    build: ./planner
+    container_name: iot_planner
+    depends_on:
+      - mosquitto
+      - analyzer
+    environment:
+      - MQTT_BROKER=${MQTT_BROKER}
+      - MQTT_PORT=${MQTT_PORT}
+      - MQTT_USERNAME=${MQTT_USERNAME}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+    networks:
+      - iot_net
+
 networks:
   iot_net:
     driver: bridge
