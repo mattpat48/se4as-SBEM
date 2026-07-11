@@ -5,7 +5,7 @@ import paho.mqtt.client as mqtt
 from datastructure import SensorData, THRESHOLDS
 from datetime import datetime
 from influxdb_client import InfluxDBClient, Point, WritePrecision
-from analyzer.engine import AnalyzerEngine
+from engine import AnalyzerEngine
 
 # Load environment variables
 mqtt_broker = os.getenv("MQTT_BROKER", "mosquitto")
@@ -36,12 +36,12 @@ engine = AnalyzerEngine(influx_write_api=influx_write_api, influx_bucket=influx_
 
 def on_connect(client, userdata, flags, rc):
     print(f"Connected with result code {rc}", flush=True)
-    client.subscribe([("City/#", 0), ("City/update/thresholds", 1)])
+    client.subscribe([("City/data/#", 0), ("City/update/thresholds", 1)])
 
 def on_message(client, userdata, msg):
     try:
         # Handle Configuration Updates
-        if msg.topic.startswith("City/update/thresholds"):
+        if msg.topic == "City/update/thresholds":
             payload = json.loads(msg.payload.decode())
             if "thresholds" in payload:
                 print(f"Updating thresholds: {payload['thresholds']}", flush=True)
@@ -56,6 +56,10 @@ def on_message(client, userdata, msg):
                         client.publish("City/alerts/config", json.dumps({"status": "thresholds_updated", "thresholds": payload["thresholds"]}), qos=1)
                 except Exception as e:
                     print(f"Error writing thresholds to InfluxDB: {e}", flush=True)
+            return
+
+        # Ignore everything except sensor telemetry
+        if not msg.topic.startswith("City/data/"):
             return
 
         # Extract location from topic (City/Location/Type)

@@ -2,7 +2,7 @@ import time
 from collections import defaultdict, deque
 from datastructure import THRESHOLDS
 from influxdb_client import Point, WritePrecision
-from .rules import evaluate_all
+from rules import evaluate_all
 
 
 class AnalyzerEngine:

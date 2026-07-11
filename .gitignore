@@ -12,3 +12,5 @@ nodered/data/.npm
 !nodered/data/flows.json
 !nodered/data/settings.js
 !nodered/data/package.json
+
+*/__pycache__/*
