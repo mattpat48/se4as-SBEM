@@ -1,0 +1,19 @@
+{
+  "planner": {
+    "horizon_seconds": 420,
+    "proactive_prob": 0.6
+  },
+  "rules": {
+    "co2_persistence": {
+      "threshold": 1000.0
+    },
+    "fire_risk": {
+      "humidity_threshold": 35.0,
+      "slope_threshold": 0.33
+    },
+    "noise_anomaly": {
+      "spike_threshold": 8.0,
+      "threshold": 85.0
+    }
+  }
+}
