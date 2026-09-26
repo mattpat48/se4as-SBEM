@@ -5,7 +5,7 @@ from dataclasses import dataclass, asdict
 class SensorData:
     sensorid: str
     value: float
-    timestamp: str
+    timestamp: float  # epoch seconds (UTC)
     # Additional metadata for Smart City context
     type: str = "temperature"
     unit: str = "°C"

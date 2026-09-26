@@ -61,7 +61,7 @@ def on_message(c, userdata, msg):
         try:
             if influx_query_api is not None:
                 minutes = 10
-                flux = f'from(bucket: "{influx_bucket}") |> range(start: -{minutes}m) |> filter(fn: (r) => r._measurement == "sensors" and r["type"] == "{stype}" and r["location"] == "{location}") |> keep(columns:["_time","_value"]) |> sort(columns:["_time"])'
+                flux = f'from(bucket: "{influx_bucket}") |> range(start: -{minutes}m) |> filter(fn: (r) => r._measurement == "sensors" and r._field == "value" and r["type"] == "{stype}" and r["location"] == "{location}") |> keep(columns:["_time","_value"]) |> sort(columns:["_time"])'
                 tables = influx_query_api.query(flux)
                 for table in tables:
                     for record in table.records:

@@ -21,11 +21,11 @@ class AnalyzerEngine:
         self.history_window_seconds = history_window_seconds
 
     def _add_sample(self, location, data):
-        # sample: value and timestamp (seconds)
+        # sample: value and timestamp (epoch seconds, as sent by the sensor)
         try:
-            ts = int(float(data.timestamp))
+            ts = float(data.timestamp)
         except Exception:
-            ts = int(time.time())
+            ts = time.time()
         sample = {'value': float(data.value), 'timestamp': ts}
         self.history[(location, data.type)].append(sample)
         self.history_by_location[location][data.type].append(sample)

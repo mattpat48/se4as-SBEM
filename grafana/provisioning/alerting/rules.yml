@@ -20,7 +20,7 @@ groups:
               query: |
                 from(bucket: "iot_bucket")
                   |> range(start: -5m)
-                  |> filter(fn: (r) => r._measurement == "sensors" and r._field == "°C")
+                  |> filter(fn: (r) => r._measurement == "sensors" and r._field == "value" and r.type == "temperature")
                   |> group()
                   |> mean()
                   |> keep(columns: ["_value"])
@@ -73,7 +73,7 @@ groups:
               query: |
                 from(bucket: "iot_bucket")
                   |> range(start: -5m)
-                  |> filter(fn: (r) => r._measurement == "sensors" and r._field == "%")
+                  |> filter(fn: (r) => r._measurement == "sensors" and r._field == "value" and r.type == "humidity")
                   |> group()
                   |> mean()
                   |> keep(columns: ["_value"])
@@ -126,7 +126,7 @@ groups:
               query: |
                 from(bucket: "iot_bucket")
                   |> range(start: -5m)
-                  |> filter(fn: (r) => r._measurement == "sensors" and r._field == "ppm")
+                  |> filter(fn: (r) => r._measurement == "sensors" and r._field == "value" and r.type == "co2")
                   |> group()
                   |> mean()
                   |> keep(columns: ["_value"])
@@ -179,7 +179,7 @@ groups:
               query: |
                 from(bucket: "iot_bucket")
                   |> range(start: -5m)
-                  |> filter(fn: (r) => r._measurement == "sensors" and r._field == "km/h")
+                  |> filter(fn: (r) => r._measurement == "sensors" and r._field == "value" and r.type == "traffic_speed")
                   |> group()
                   |> mean()
                   |> keep(columns: ["_value"])
@@ -232,7 +232,7 @@ groups:
               query: |
                 from(bucket: "iot_bucket")
                   |> range(start: -5m)
-                  |> filter(fn: (r) => r._measurement == "sensors" and r._field == "dB")
+                  |> filter(fn: (r) => r._measurement == "sensors" and r._field == "value" and r.type == "noise_level")
                   |> group()
                   |> mean()
                   |> keep(columns: ["_value"])
