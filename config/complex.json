@@ -1,0 +1,285 @@
+{
+  "complex": {
+    "name": "Residenza Parco",
+    "lat": null,
+    "lon": null,
+    "seed": 42,
+    "sampling_period_s": 10,
+    "actuator_state_period_s": 60,
+    "physics_step_s": 1,
+    "clock": {"speed": 1, "max_speed": 60}
+  },
+
+  "device_types": {
+    "temperature":   {"kind": "sensor", "unit": "°C",    "valid_range": [-40, 150],   "noise": 0.1,  "rest_value": null, "stuck_check": true,  "drift_check": true},
+    "humidity":      {"kind": "sensor", "unit": "%",     "valid_range": [0, 100],     "noise": 0.5,  "rest_value": null, "stuck_check": true,  "drift_check": true},
+    "co2":           {"kind": "sensor", "unit": "ppm",   "valid_range": [0, 10000],   "noise": 10,   "rest_value": null, "stuck_check": true,  "drift_check": true},
+    "noise_level":   {"kind": "sensor", "unit": "dB",    "valid_range": [20, 130],    "noise": 0.5,  "rest_value": null, "stuck_check": true,  "drift_check": false},
+    "occupancy":     {"kind": "sensor", "unit": "persone", "valid_range": [0, 50],    "noise": 0,    "rest_value": 0,    "stuck_check": false, "drift_check": false},
+    "light":         {"kind": "sensor", "unit": "lux",   "valid_range": [0, 120000],  "noise": 5,    "rest_value": 0,    "stuck_check": true,  "drift_check": false},
+    "smoke":         {"kind": "sensor", "unit": "%",     "valid_range": [0, 100],     "noise": 0.05, "rest_value": 0,    "stuck_check": true,  "drift_check": false},
+    "gas":           {"kind": "sensor", "unit": "%LEL",  "valid_range": [0, 100],     "noise": 0.2,  "rest_value": 0,    "stuck_check": true,  "drift_check": false},
+    "co":            {"kind": "sensor", "unit": "ppm",   "valid_range": [0, 1000],    "noise": 1,    "rest_value": 0,    "stuck_check": true,  "drift_check": false},
+    "power":         {"kind": "sensor", "unit": "W",     "valid_range": [0, 20000],   "noise": 5,    "rest_value": 0,    "stuck_check": true,  "drift_check": false},
+    "water_flow":    {"kind": "sensor", "unit": "L/min", "valid_range": [0, 30],      "noise": 0.1,  "rest_value": 0,    "stuck_check": true,  "drift_check": false},
+    "gas_flow":      {"kind": "sensor", "unit": "m³/h",  "valid_range": [0, 5],       "noise": 0.01, "rest_value": 0,    "stuck_check": true,  "drift_check": false},
+    "pv_power":      {"kind": "sensor", "unit": "W",     "valid_range": [0, 50000],   "noise": 20,   "rest_value": 0,    "stuck_check": true,  "drift_check": false},
+    "rain_level":    {"kind": "sensor", "unit": "mm/h",  "valid_range": [0, 300],     "noise": 0.1,  "rest_value": 0,    "stuck_check": true,  "drift_check": false},
+    "wind_speed":    {"kind": "sensor", "unit": "km/h",  "valid_range": [0, 200],     "noise": 0.5,  "rest_value": 0,    "stuck_check": true,  "drift_check": false},
+    "seismic":       {"kind": "sensor", "unit": "Mw",    "valid_range": [0, 10],      "noise": 0.02, "rest_value": null, "stuck_check": true,  "drift_check": false},
+    "pm10":          {"kind": "sensor", "unit": "µg/m³", "valid_range": [0, 1000],    "noise": 1,    "rest_value": null, "stuck_check": true,  "drift_check": false},
+    "pm2_5":         {"kind": "sensor", "unit": "µg/m³", "valid_range": [0, 1000],    "noise": 0.5,  "rest_value": null, "stuck_check": true,  "drift_check": false},
+    "soil_moisture": {"kind": "sensor", "unit": "%",     "valid_range": [0, 100],     "noise": 0.2,  "rest_value": null, "stuck_check": true,  "drift_check": false},
+
+    "hvac": {
+      "kind": "actuator",
+      "commands": {"mode": {"enum": ["off", "heat", "cool"]}, "setpoint": {"min": 16, "max": 30}},
+      "default": {"mode": "off", "setpoint": 21},
+      "power_w": {"by": "mode", "map": {"off": 0, "heat": 100, "cool": 1500}},
+      "essential": false
+    },
+    "ventilation": {
+      "kind": "actuator",
+      "commands": {"level": {"min": 0, "max": 3, "integer": true}},
+      "default": {"level": 1},
+      "power_w": {"by": "level", "per_unit": 30},
+      "essential": false
+    },
+    "window": {
+      "kind": "actuator",
+      "commands": {"position": {"enum": ["open", "closed"]}},
+      "default": {"position": "closed"},
+      "power_w": {"const": 0},
+      "essential": false
+    },
+    "blinds": {
+      "kind": "actuator",
+      "commands": {"position": {"min": 0, "max": 100}},
+      "default": {"position": 100},
+      "power_w": {"const": 0},
+      "essential": false
+    },
+    "lights": {
+      "kind": "actuator",
+      "commands": {"level": {"min": 0, "max": 100}},
+      "default": {"level": 0},
+      "power_w": {"by": "level", "per_unit": 1},
+      "essential": false
+    },
+    "gas_valve": {
+      "kind": "actuator",
+      "commands": {"position": {"enum": ["open", "closed"]}},
+      "default": {"position": "open"},
+      "power_w": {"const": 0},
+      "essential": true
+    },
+    "alarm": {
+      "kind": "actuator",
+      "commands": {"siren": {"enum": ["on", "off"]}},
+      "default": {"siren": "off"},
+      "power_w": {"by": "siren", "map": {"on": 10, "off": 0}},
+      "essential": true
+    },
+    "resident_display": {
+      "kind": "actuator",
+      "commands": {"message": {"string": true}, "level": {"enum": ["info", "warning", "danger"]}, "clear": {"bool": true}},
+      "default": {"message": "", "level": "info"},
+      "power_w": {"const": 5},
+      "essential": true
+    },
+    "stair_lights": {
+      "kind": "actuator",
+      "commands": {"mode": {"enum": ["off", "normal", "evacuation"]}},
+      "default": {"mode": "off"},
+      "power_w": {"by": "mode", "map": {"off": 0, "normal": 50, "evacuation": 80}},
+      "essential": true
+    },
+    "smoke_vent": {
+      "kind": "actuator",
+      "commands": {"position": {"enum": ["open", "closed"]}},
+      "default": {"position": "closed"},
+      "power_w": {"const": 0},
+      "essential": true
+    },
+    "evacuation_siren": {
+      "kind": "actuator",
+      "commands": {"siren": {"enum": ["on", "off"]}},
+      "default": {"siren": "off"},
+      "power_w": {"by": "siren", "map": {"on": 20, "off": 0}},
+      "essential": true
+    },
+    "elevator": {
+      "kind": "actuator",
+      "commands": {"mode": {"enum": ["normal", "recall"]}},
+      "default": {"mode": "normal"},
+      "power_w": {"by": "mode", "map": {"normal": 500, "recall": 100}},
+      "essential": true
+    },
+    "battery": {
+      "kind": "actuator",
+      "commands": {"mode": {"enum": ["charge", "discharge", "idle"]}},
+      "default": {"mode": "idle"},
+      "power_w": {"dynamic": true},
+      "essential": false
+    },
+    "irrigation": {
+      "kind": "actuator",
+      "commands": {"state": {"enum": ["on", "off"]}},
+      "default": {"state": "off"},
+      "power_w": {"by": "state", "map": {"on": 500, "off": 0}},
+      "essential": false
+    },
+    "park_lights": {
+      "kind": "actuator",
+      "commands": {"state": {"enum": ["on", "off"]}},
+      "default": {"state": "off"},
+      "power_w": {"by": "state", "map": {"on": 2000, "off": 0}},
+      "essential": false
+    },
+    "evacuation_signs": {
+      "kind": "actuator",
+      "commands": {"state": {"enum": ["on", "off"]}},
+      "default": {"state": "off"},
+      "power_w": {"by": "state", "map": {"on": 200, "off": 0}},
+      "essential": true
+    },
+    "ev_charger": {
+      "kind": "actuator",
+      "commands": {"mode": {"enum": ["charge", "pause"]}, "max_power_w": {"min": 0, "max": 11000}},
+      "default": {"mode": "charge", "max_power_w": 7400},
+      "power_w": {"dynamic": true},
+      "essential": false
+    }
+  },
+
+  "profiles": {
+    "famiglia":   {"residents": [3, 4], "weight": 0.40},
+    "lavoratori": {"residents": [1, 2], "weight": 0.30},
+    "anziano":    {"residents": [1, 2], "weight": 0.15},
+    "studenti":   {"residents": [2, 3], "weight": 0.15}
+  },
+
+  "apartment_template": {
+    "area_m2": 80,
+    "height_m": 2.7,
+    "insulation": "media",
+    "sensors": ["temperature", "humidity", "co2", "noise_level", "occupancy", "light",
+                "smoke", "gas", "co", "power", "water_flow", "gas_flow"],
+    "actuators": ["hvac", "ventilation", "window", "blinds", "lights",
+                  "gas_valve", "alarm", "resident_display"]
+  },
+
+  "stairwell_template": {
+    "sensors": ["temperature", "smoke", "light", "occupancy"],
+    "actuators": ["stair_lights", "smoke_vent", "evacuation_siren"]
+  },
+
+  "buildings": [
+    {"id": "A", "floors": 4, "apartments_per_floor": 2,
+     "orientation": {"1": "S", "2": "N"},
+     "pv_peak_w": 20000, "battery_kwh": 40, "battery_max_w": 10000,
+     "sensors": ["pv_power"], "actuators": ["elevator", "battery"],
+     "layout": {"x_m": 0, "y_m": 45, "rotation_deg": 0, "width_m": 24, "depth_m": 12, "floor_height_m": 3},
+     "overrides": {"A-0-1": {"profile": "anziano", "residents": 1}}},
+    {"id": "B", "floors": 4, "apartments_per_floor": 2,
+     "orientation": {"1": "O", "2": "E"},
+     "pv_peak_w": 20000, "battery_kwh": 40, "battery_max_w": 10000,
+     "sensors": ["pv_power"], "actuators": ["elevator", "battery"],
+     "layout": {"x_m": 50, "y_m": 0, "rotation_deg": 90, "width_m": 24, "depth_m": 12, "floor_height_m": 3},
+     "overrides": {}},
+    {"id": "C", "floors": 4, "apartments_per_floor": 2,
+     "orientation": {"1": "N", "2": "S"},
+     "pv_peak_w": 20000, "battery_kwh": 40, "battery_max_w": 10000,
+     "sensors": ["pv_power"], "actuators": ["elevator", "battery"],
+     "layout": {"x_m": 0, "y_m": -45, "rotation_deg": 0, "width_m": 24, "depth_m": 12, "floor_height_m": 3},
+     "overrides": {}},
+    {"id": "D", "floors": 4, "apartments_per_floor": 2,
+     "orientation": {"1": "E", "2": "O"},
+     "pv_peak_w": 20000, "battery_kwh": 40, "battery_max_w": 10000,
+     "sensors": ["pv_power"], "actuators": ["elevator", "battery"],
+     "layout": {"x_m": -50, "y_m": 0, "rotation_deg": 90, "width_m": 24, "depth_m": 12, "floor_height_m": 3},
+     "overrides": {}}
+  ],
+
+  "park": {
+    "area_m2": 3000,
+    "layout": {"x_m": 0, "y_m": 0, "width_m": 60, "depth_m": 50},
+    "sensors": ["temperature", "humidity", "rain_level", "wind_speed", "light",
+                "noise_level", "seismic", "pm10", "pm2_5", "soil_moisture"],
+    "actuators": ["irrigation", "park_lights", "evacuation_signs"]
+  },
+
+  "parking": {
+    "layout": {"x_m": 0, "y_m": -75, "width_m": 40, "depth_m": 15},
+    "chargers": [
+      {"id": "EV-A", "building": "A", "max_power_w": 7400},
+      {"id": "EV-B", "building": "B", "max_power_w": 7400},
+      {"id": "EV-C", "building": "C", "max_power_w": 7400},
+      {"id": "EV-D", "building": "D", "max_power_w": 7400}
+    ]
+  },
+
+  "adjacency_overrides": [],
+
+  "physics": {
+    "outdoor": {
+      "monthly_mean_temp": [2.5, 3.5, 7, 10, 14.5, 19, 22, 22, 17.5, 12.5, 7, 3.5],
+      "daily_amplitude": 5, "t_min_hour": 6, "t_max_hour": 15,
+      "day_length_h": {"min": 9.2, "max": 15.2}, "solar_noon_h": 12.5,
+      "max_lux": 100000, "cloud_light_factor": 0.8,
+      "humidity_at_tmin": 85, "humidity_at_tmax": 50, "rain_humidity_bonus": 20,
+      "rain_start_prob_h": 0.08, "rain_stop_prob_h": 0.5, "rain_mm_h": [1, 10], "rain_cloudiness": 0.9,
+      "wind_base_kmh": [0, 20], "traffic_noise_db": {"night": 45, "peak": 65}, "traffic_peaks_h": [8, 18],
+      "pm10_base": 15, "pm2_5_base": 8, "pm10_traffic": 20, "pm2_5_traffic": 10, "rain_pm_factor": 0.5,
+      "seismic_background": [0, 0.5], "earthquake_noise": 0.1,
+      "soil": {"dry_rate_h": 0.5, "rain_gain_per_mm": 3, "irrigation_gain_h": 15},
+      "scenario_relax_tau_h": 6,
+      "storm": {"rain_mm_h": [30, 60], "wind_kmh": [60, 90]}
+    },
+    "apartment": {
+      "tau_env_h": {"bassa": 3, "media": 6, "alta": 12}, "window_tau_min": 20,
+      "person_heat_c_h": 0.15, "solar_gain_c_h": {"S": 1.5, "E": 1.0, "O": 1.0, "N": 0.3},
+      "hvac_rate_c_h": 2, "hvac_deadband_c": 0.5,
+      "co2_outdoor_ppm": 420, "co2_per_person_ppm_h": 92.6, "co2_reference_volume_m3": 216,
+      "ach": {"infiltration": 0.3, "per_ventilation_level": 0.5, "window_open": 4},
+      "humidity": {"per_person_h": 2, "shower_points": 15, "cooking_points": 5, "cooling_removal_h": 3},
+      "light": {"window_factor": 0.02, "lux_per_light_level": 5},
+      "noise": {"base_db": 30, "person_db": 50, "window_closed_attenuation": 30, "window_open_attenuation": 10, "siren_db": 85},
+      "power": {"base_w": 150, "cooking_w": 2000},
+      "water": {"shower_l_min": 10, "shower_min": 8, "kitchen_l_min": 5},
+      "gas": {"cooking_m3_h": 0.3, "heating_m3_h": 1.2, "hot_water_m3_h": 0.8},
+      "meals": [["12:30", "13:30"], ["19:30", "20:30"]],
+      "shower_windows": [["06:30", "08:00"], ["19:00", "22:00"]]
+    },
+    "fire": {
+      "ignition_intensity": 0.05, "growth_per_min": 0.2, "oxygen_factor": 1.5, "heat_c_h": 300,
+      "smoke_max": 100, "co_ppm_h": 500, "co2_ppm_h": 5000,
+      "spread_threshold": 0.7, "spread_prob_per_min": 0.1, "stairwell_smoke_share": 0.3, "extinguish_tau_min": 10
+    },
+    "stairwell": {"smoke_vent_tau_min": 3, "light_factor": 0.05, "lux_per_mode": {"off": 0, "normal": 150, "evacuation": 300}, "transit_s": 60},
+    "energy": {"pv_cloud_factor": 0.7},
+    "occupancy": {
+      "jitter_min": 30, "weekend_home_prob": 0.5, "evacuation_delay_min": [2, 5],
+      "schedules": {
+        "famiglia":   {"groups": [{"share": 0.5, "away": [["08:00", "18:00"]]}, {"share": 0.5, "away": [["08:00", "14:00"]]}], "awake": ["06:30", "23:00"]},
+        "lavoratori": {"groups": [{"share": 1.0, "away": [["08:00", "19:00"]]}], "awake": ["06:30", "24:00"]},
+        "anziano":    {"groups": [{"share": 1.0, "away": [["10:00", "11:00"]]}], "awake": ["07:00", "22:00"]},
+        "studenti":   {"groups": [{"share": 1.0, "away": [["09:00", "13:00"], ["15:00", "18:00"]]}], "awake": ["08:00", "01:00"]}
+      }
+    },
+    "ev": {"arrive_h": [18, 20], "leave_h": [7, 9], "need_kwh": [10, 30]},
+    "drift_rate_per_min": {"temperature": 0.3, "humidity": 1.0, "co2": 30, "default_span_fraction": 0.005}
+  },
+
+  "monitor": {
+    "stuck_readings": 6,
+    "offline_periods": 3,
+    "recovery_readings": 3,
+    "drift_window_min": 20,
+    "drift_slope": {"temperature": 0.1, "humidity": 0.5, "co2": 20},
+    "drift_delta": {"temperature": 2.0, "humidity": 8.0, "co2": 300},
+    "influx_batch_size": 500,
+    "influx_flush_s": 1,
+    "influx_buffer_max": 50000
+  }
+}

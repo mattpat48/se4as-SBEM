@@ -169,6 +169,24 @@ services:
     volumes:
       - ./config:/app/config
 
+  # 9. Simulator (managed resource: residential complex, Monitor v2)
+  simulator:
+    build: ./simulator
+    container_name: iot_simulator
+    depends_on:
+      - mosquitto
+    environment:
+      - MQTT_BROKER=${MQTT_BROKER}
+      - MQTT_PORT=${MQTT_PORT}
+      - MQTT_USERNAME=${MQTT_USERNAME}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+      - CONFIG_PATH=/app/config/complex.json
+    volumes:
+      - ./config/complex.json:/app/config/complex.json:ro
+    restart: unless-stopped
+    networks:
+      - iot_net
+
 networks:
   iot_net:
     driver: bridge

@@ -14,3 +14,5 @@ nodered/data/.npm
 !nodered/data/package.json
 
 */__pycache__/*
+.pytest_cache/
+__pycache__/
