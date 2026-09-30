@@ -29,6 +29,7 @@ Questo file traccia **cosa fa oggi** il Monitor, **cosa dovrà fare** nella vers
 | **Dati storici in InfluxDB** (measurement, tag, campi, query di esempio) | [Specifica, §11](superpowers/specs/2026-09-30-monitor-v2-design.md#11-knowledge-influxdb) | Tappa 3 |
 | **Codice del simulatore** | Cartella `simulator/` (test in `simulator/tests/`, prova end-to-end in `scripts/e2e_simulator.py`) | ✅ Tappe 1–2 |
 | **Codice del Monitor** | Cartella `monitor/` | Tappa 3 |
+| **Vista 3D** (stato, decisioni, specifica) | [`docs/VISTA_3D.md`](VISTA_3D.md) | In progettazione |
 | Monitor **attuale (v1)**: topic `City/…`, measurement `sensors` | Sezione 3 di questo file | Già disponibile |
 
 ---
@@ -316,7 +317,7 @@ Durante le tappe 1–3 la v1 (`City/…`) **continua a funzionare in parallelo**
 
 **InfluxDB (D18):** `readings` (misure validate e derivati), `actuator_states`, `device_health`, `scenario_events`.
 
-La **vista 3D** sarà un sotto-progetto successivo: leggerà gli stessi topic MQTT e mostrerà i 4 palazzi con il parco, senza contenere logica di simulazione.
+La **vista 3D** è un sotto-progetto a parte, tracciato in [`docs/VISTA_3D.md`](VISTA_3D.md) (specifica: [`2026-09-30-vista-3d-design.md`](superpowers/specs/2026-09-30-vista-3d-design.md)). Non contiene logica di simulazione. Si collega al broker via WebSocket (porta 9001) con un utente dedicato `view`, protetto da ACL. Oltre a `raw`, `state`, `scenarios`, `clock` e `model` legge anche `Complex/ack/…` e `Complex/status/…`, e scrive solo su `Complex/cmd/…` (comandi manuali del pannello di debug, con `"issued_by": "debug"`) e su `Complex/control/clock`. Nella fase 1 della vista i campi `layout` dei palazzi passano a 26 m di larghezza e 3,2 m per piano; li usa solo la vista.
 
 ### 4.6 Come avviare e provare il simulatore
 
@@ -365,3 +366,4 @@ Scelte di dettaglio prese durante l'implementazione, dove la specifica non dicev
 | 2026-09-30 | Design di dettaglio approvato in 6 sezioni (decisioni D14–D19); scritta la specifica tecnica; aggiunta la guida "Dove trovare cosa", il piano delle tappe e il riepilogo del design |
 | 2026-09-30 | Specifica approvata; scritto il piano di implementazione del simulatore (tappe 1–2, 12 task) |
 | 2026-09-30 | Tappe 1–2 completate: simulatore del complesso con ciclo chiuso (comandi, ack, scenari, guasti) |
+| 2026-09-30 | Progettata la vista 3D (fase 1): contratto di accesso della vista al broker annotato nella 4.5; stato in `docs/VISTA_3D.md` |
