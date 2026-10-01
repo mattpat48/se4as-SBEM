@@ -38,6 +38,17 @@ sudo docker exec -it iot_influxdb influx delete --bucket iot_bucket --org iot_or
 ```
 to perfectly clean the database at startup.
 
+## Menu di sviluppo (macOS e Windows)
+
+Al posto dei comandi a mano si può usare il menu interattivo `dev.py` (solo libreria standard, Python 3.9+):
+
+- **macOS**: doppio clic su `dev.command` nel Finder, oppure `./dev.command` da terminale;
+- **Windows**: doppio clic su `dev.bat`, oppure `dev.bat` da terminale;
+- ovunque: `python3 dev.py`.
+
+Il menu avvia i preset (vista 3D; pipeline MAPE-K senza Node-RED; stack completo) o una scelta manuale di servizi. Mostra stato e log, avvia e ferma gli scenari del simulatore, regola l'orologio, spia il traffico MQTT, lancia i test e la vista 3D in sviluppo (`npm run dev`), ferma, riavvia e ricostruisce i servizi.
+Node-RED parte sempre con `TELEGRAM_CHAT_ID=0` (allarmi non inoltrati), salvo conferma esplicita. Per i test servono [uv](https://docs.astral.sh/uv/) e, per la vista 3D, Node.js.
+
 ## Vista 3D (complesso residenziale)
 
 Vista 3D/2D del complesso dell'Aquila (4 palazzi, parco, parcheggio) che mostra in tempo reale i dati del simulatore via MQTT, con un pannello di debug per i comandi agli attuatori e l'orologio simulato.

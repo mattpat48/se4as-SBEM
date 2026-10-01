@@ -18,3 +18,5 @@ nodered/data/.npm
 __pycache__/
 
 .superpowers/
+
+.DS_Store
