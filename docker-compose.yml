@@ -187,6 +187,22 @@ services:
     networks:
       - iot_net
 
+  # 10. 3D view (static React Three Fiber app; the browser connects to Mosquitto via WebSocket)
+  view:
+    build: ./view
+    container_name: iot_view
+    ports:
+      - "8080:80"
+    environment:
+      - VIEW_MQTT_URL=${VIEW_MQTT_URL}
+      - VIEW_MQTT_USERNAME=${VIEW_MQTT_USERNAME}
+      - VIEW_MQTT_PASSWORD=${VIEW_MQTT_PASSWORD}
+    depends_on:
+      - mosquitto
+    restart: unless-stopped
+    networks:
+      - iot_net
+
 networks:
   iot_net:
     driver: bridge

@@ -29,7 +29,7 @@ Questo file traccia **cosa fa oggi** il Monitor, **cosa dovrà fare** nella vers
 | **Dati storici in InfluxDB** (measurement, tag, campi, query di esempio) | [Specifica, §11](superpowers/specs/2026-09-30-monitor-v2-design.md#11-knowledge-influxdb) | Tappa 3 |
 | **Codice del simulatore** | Cartella `simulator/` (test in `simulator/tests/`, prova end-to-end in `scripts/e2e_simulator.py`) | ✅ Tappe 1–2 |
 | **Codice del Monitor** | Cartella `monitor/` | Tappa 3 |
-| **Vista 3D** (stato, decisioni, specifica) | [`docs/VISTA_3D.md`](VISTA_3D.md) | In progettazione |
+| **Vista 3D** (stato, decisioni, specifica, come avviarla) | [`docs/VISTA_3D.md`](VISTA_3D.md); codice in `view/` | ✅ Fase 1 disponibile |
 | Monitor **attuale (v1)**: topic `City/…`, measurement `sensors` | Sezione 3 di questo file | Già disponibile |
 
 ---
@@ -367,3 +367,4 @@ Scelte di dettaglio prese durante l'implementazione, dove la specifica non dicev
 | 2026-09-30 | Specifica approvata; scritto il piano di implementazione del simulatore (tappe 1–2, 12 task) |
 | 2026-09-30 | Tappe 1–2 completate: simulatore del complesso con ciclo chiuso (comandi, ack, scenari, guasti) |
 | 2026-09-30 | Progettata la vista 3D (fase 1): contratto di accesso della vista al broker annotato nella 4.5; stato in `docs/VISTA_3D.md` |
+| 2026-10-01 | Vista 3D, fase 1 disponibile: servizio `view`, listener WebSocket 9001 e ACL in Mosquitto, `layout` dei palazzi a 26 m e 3,2 m |

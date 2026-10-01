@@ -38,7 +38,19 @@ sudo docker exec -it iot_influxdb influx delete --bucket iot_bucket --org iot_or
 ```
 to perfectly clean the database at startup.
 
-## Monitorate logs
+## Vista 3D (complesso residenziale)
+
+Vista 3D/2D del complesso dell'Aquila (4 palazzi, parco, parcheggio) che mostra in tempo reale i dati del simulatore via MQTT, con un pannello di debug per i comandi agli attuatori e l'orologio simulato.
+
+Per provarla bastano broker, simulatore e vista:
+```bash
+docker compose up -d --build mosquitto simulator view
+```
+poi apri http://localhost:8080. **Non avviare Node-RED** (né l'intero stack) mentre la provi: inoltra gli allarmi al canale Telegram reale.
+
+Il browser si collega a Mosquitto via WebSocket (porta 9001) con l'utente `view`, che ha permessi minimi (ACL in `mosquitto/config/aclfile`; credenziali in `.env`). Comandi da tastiera, test, verifica a vista e copione della demo sono in [`docs/VISTA_3D.md`](docs/VISTA_3D.md).
+
+
 
 To watch the logs of the singles containers, simply type:
 ```bash

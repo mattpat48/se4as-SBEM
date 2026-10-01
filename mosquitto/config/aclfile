@@ -1,0 +1,13 @@
+user admin
+topic readwrite #
+
+user view
+topic read  Complex/model
+topic read  Complex/clock
+topic read  Complex/scenarios
+topic read  Complex/status/#
+topic read  Complex/raw/#
+topic read  Complex/state/#
+topic read  Complex/ack/#
+topic write Complex/cmd/#
+topic write Complex/control/clock

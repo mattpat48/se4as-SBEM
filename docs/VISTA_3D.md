@@ -6,30 +6,30 @@ Questo file traccia **cosa deve fare** la vista 3D del complesso residenziale, *
 
 **Specifica tecnica della fase 1:** [`docs/superpowers/specs/2026-09-30-vista-3d-design.md`](superpowers/specs/2026-09-30-vista-3d-design.md). È il riferimento ufficiale per nomi, misure, soglie e tappe: se questo file e la specifica non coincidono, **vale la specifica**.
 
-**Ultimo aggiornamento:** 2026-09-30
+**Ultimo aggiornamento:** 2026-10-01
 
 ---
 
 ## 0. Dove trovare cosa (guida rapida)
 
-> La vista 3D è **progettata**: specifica approvata e [piano di implementazione](superpowers/plans/2026-09-30-vista-3d.md) scritto (15 task nelle tappe T1–T6). Non c'è ancora codice. Le fonti di dati esistono già perché le produce il simulatore. Le righe con 📐 esisteranno dalla tappa indicata (sezione 3).
+> La **fase 1** della vista 3D è **disponibile**: tutte le tappe T1–T6 del [piano](superpowers/plans/2026-09-30-vista-3d.md) sono completate (sezione 3). Come avviarla e provarla: sezione 3.1; verifica a vista: sezione 3.2.
 
 | Cerco… | Dove si trova | Disponibile da |
 |---|---|---|
-| **Cosa fa la vista e come** (architettura, scena, interfaccia, errori, test) | [Specifica della vista](superpowers/specs/2026-09-30-vista-3d-design.md) | 📐 |
-| **Posizioni e dimensioni** di palazzi, parco e parcheggio (campi `layout`) | `config/complex.json`; formato nella [specifica Monitor v2, §5](superpowers/specs/2026-09-30-monitor-v2-design.md#5-il-modello-del-complesso-configcomplexjson). Nuovi valori dei palazzi (26 m, 3,2 m) nella [specifica della vista, §14](superpowers/specs/2026-09-30-vista-3d-design.md#14-modifiche-fuori-da-view) | ✅ Simulatore; nuovi valori da T2 |
-| **Pianta tipo** degli appartamenti (stanze, finestre, balcone, vano scale) | [Specifica della vista, §7.2](superpowers/specs/2026-09-30-vista-3d-design.md#72-pianta-tipo-domainplants) | 📐 T2 |
-| **Dove sta ogni sensore e attuatore** nella scena | [Specifica della vista, §7.3](superpowers/specs/2026-09-30-vista-3d-design.md#73-posizione-dei-dispositivi-domainplacementts) | 📐 T2 |
-| **Come si vede ogni attuatore** e **ogni emergenza** | [Specifica della vista, §7.4 e §7.8](superpowers/specs/2026-09-30-vista-3d-design.md#74-resa-degli-attuatori) | 📐 T4–T5 |
+| **Cosa fa la vista e come** (architettura, scena, interfaccia, errori, test) | [Specifica della vista](superpowers/specs/2026-09-30-vista-3d-design.md) | ✅ T1–T6 |
+| **Posizioni e dimensioni** di palazzi, parco e parcheggio (campi `layout`) | `config/complex.json`; formato nella [specifica Monitor v2, §5](superpowers/specs/2026-09-30-monitor-v2-design.md#5-il-modello-del-complesso-configcomplexjson). Nuovi valori dei palazzi (26 m, 3,2 m) nella [specifica della vista, §14](superpowers/specs/2026-09-30-vista-3d-design.md#14-modifiche-fuori-da-view) | ✅ Simulatore; nuovi valori ✅ T2 |
+| **Pianta tipo** degli appartamenti (stanze, finestre, balcone, vano scale) | [Specifica della vista, §7.2](superpowers/specs/2026-09-30-vista-3d-design.md#72-pianta-tipo-domainplants); codice in `view/src/domain/plan.ts` | ✅ T2 |
+| **Dove sta ogni sensore e attuatore** nella scena | [Specifica della vista, §7.3](superpowers/specs/2026-09-30-vista-3d-design.md#73-posizione-dei-dispositivi-domainplacementts); codice in `view/src/domain/placement.ts` e `layout.ts` | ✅ T2 |
+| **Come si vede ogni attuatore** e **ogni emergenza** | [Specifica della vista, §7.4 e §7.8](superpowers/specs/2026-09-30-vista-3d-design.md#74-resa-degli-attuatori); codice in `view/src/domain/actuatorVisual.ts` e `view/src/scene/Devices.tsx` | ✅ attuatori T4 · emergenze T5 |
 | **Modello completo espanso** (32 appartamenti, vani scala, dispositivi, layout) | Topic MQTT retained `Complex/model` | ✅ Simulatore, tappa 1 |
 | **Misure grezze** dei sensori | `Complex/raw/<area>/<unità>/<sensore>` ([specifica Monitor v2, §7](superpowers/specs/2026-09-30-monitor-v2-design.md#7-contratto-mqtt)) | ✅ Simulatore |
 | **Stato degli attuatori** (finestre, tapparelle, luci, sirene…) | `Complex/state/<area>/<unità>/<attuatore>` (retained) | ✅ Simulatore |
 | **Ora simulata** (giorno/notte) e **scenari attivi** | `Complex/clock`, `Complex/scenarios` (retained) | ✅ Simulatore |
-| **Topic che la vista può leggere e scrivere** (utente MQTT `view`, ACL) | [Specifica della vista, §5](superpowers/specs/2026-09-30-vista-3d-design.md#5-broker-e-sicurezza) | 📐 T1 |
-| **Come avviarla** | `docker compose up -d --build mosquitto simulator view`, poi http://localhost:8080 (senza Node-RED, che inoltra a Telegram) | 📐 T1 |
-| **Copione della demo** | [Specifica della vista, §13](superpowers/specs/2026-09-30-vista-3d-design.md#13-copione-della-demo-fase-1-circa-4-minuti) | 📐 T6 |
+| **Topic che la vista può leggere e scrivere** (utente MQTT `view`, ACL) | [Specifica della vista, §5](superpowers/specs/2026-09-30-vista-3d-design.md#5-broker-e-sicurezza); file `mosquitto/config/aclfile` | ✅ T1 |
+| **Come avviarla** | Sezione 3.1: `docker compose up -d --build mosquitto simulator view`, poi http://localhost:8080 (senza Node-RED, che inoltra a Telegram) | ✅ T1 |
+| **Copione della demo** | [Specifica della vista, §13](superpowers/specs/2026-09-30-vista-3d-design.md#13-copione-della-demo-fase-1-circa-4-minuti); provato il 2026-10-01 (sezione 3.2) | ✅ T6 |
 | Prototipo usa e getta dei tre stili (solo riferimento visivo) | `.superpowers/brainstorm/…/content/stile-3d-v2.html` (non versionato) | — |
-| Codice della vista 3D | Cartella `view/` | 📐 T1 |
+| Codice della vista 3D | Cartella `view/` (test accanto ai moduli, `npm test`; prova end-to-end in `scripts/e2e_view.py`) | ✅ T1 |
 
 ---
 
@@ -71,21 +71,103 @@ La vista è **solo una vista**: nessuna logica di simulazione al suo interno. Le
 
 | Tappa | Contenuto | Risultato verificabile | Stato |
 |---|---|---|---|
-| T1 | Mosquitto (WebSocket, ACL, utente `view`), servizio `view` (nginx, `config.js`), collegamento MQTT, store, banner di stato | La pagina mostra "414 sensori · 283 attuatori ricevuti" | ⬜ |
-| T2 | `layout` dei palazzi a 26 m e 3,2 m; scena statica dal modello (palazzi, stanze, parco, parcheggio), camera, filtri palazzo e piano, 2D/3D, minimappa | Il complesso è navigabile e tagliabile per piano, in 3D e in 2D | ⬜ |
-| T3 | Pannello di debug: comandi agli attuatori e orologio | Un comando manuale produce l'ack; il salto alle 22:00 cambia l'ora | ⬜ |
-| T4 | Dati vivi: mappa di calore interpolata, sovraimpressioni per zoom, scheda con storico breve, attuatori animati, persone, auto | Aprendo una finestra dal debug la si vede aprirsi; i colori seguono le misure | ⬜ |
-| T5 | Atmosfera ed emergenze: giorno→notte, meteo, fumo, fuoco, sirene, sisma, modalità dati | Un incendio avviato con `mosquitto_pub` si vede nascere e propagarsi | ⬜ |
-| T6 | Documentazione (questo file con la checklist visiva, MONITOR.md, README) e prova del copione della demo | Il copione funziona da capo a fondo | ⬜ |
+| T1 | Mosquitto (WebSocket, ACL, utente `view`), servizio `view` (nginx, `config.js`), collegamento MQTT, store, banner di stato | La pagina mostra "414 sensori · 283 attuatori ricevuti" | ✅ |
+| T2 | `layout` dei palazzi a 26 m e 3,2 m; scena statica dal modello (palazzi, stanze, parco, parcheggio), camera, filtri palazzo e piano, 2D/3D, minimappa | Il complesso è navigabile e tagliabile per piano, in 3D e in 2D | ✅ |
+| T3 | Pannello di debug: comandi agli attuatori e orologio | Un comando manuale produce l'ack; il salto alle 22:00 cambia l'ora | ✅ |
+| T4 | Dati vivi: mappa di calore interpolata, sovraimpressioni per zoom, scheda con storico breve, attuatori animati, persone, auto | Aprendo una finestra dal debug la si vede aprirsi; i colori seguono le misure | ✅ |
+| T5 | Atmosfera ed emergenze: giorno→notte, meteo, fumo, fuoco, sirene, sisma, modalità dati | Un incendio avviato con `mosquitto_pub` si vede nascere e propagarsi | ✅ |
+| T6 | Documentazione (questo file con la checklist visiva, MONITOR.md, README) e prova del copione della demo | Il copione funziona da capo a fondo | ✅ |
 
 **Fase 2** (dopo Monitor, Analyzer e Planner v2): strato leggero del manager, persone evacuate nel parco (V9), prima persona (V4). Avrà una sua specifica.
+
+### 3.1 Come avviarla e provarla
+
+**Avvio (demo):**
+
+```bash
+docker compose up -d --build mosquitto simulator view
+```
+
+poi http://localhost:8080. **Non avviare Node-RED** né l'intero stack: inoltra gli allarmi a un canale Telegram reale. La build Docker esegue `npm run check` e `npm test`: se falliscono, l'immagine non si costruisce.
+
+**Sviluppo** (Node 22 o successivo): `cd view && npm install && npm run dev`, poi http://localhost:5173 (serve comunque `mosquitto` e `simulator` in Docker). Solo in sviluppo gli store sono raggiungibili dalla console del browser come `window.__view` (per esempio `window.__view.useUiStore.getState().setFloor(2)`).
+
+**Test:**
+- unitari: `cd view && npm test` e `npm run check`;
+- end-to-end (stack avviato): `uv run --no-project --python 3.11 --with 'paho-mqtt>=2,<3' python scripts/e2e_view.py` (5 controlli: pagina, dati via WebSocket, `admin` su 1883, comando di debug con ack, ACL che vieta gli scenari a `view`).
+
+**Utente MQTT `view`:** la password è in `.env` (`VIEW_MQTT_PASSWORD`). Per cambiarla o ricrearla:
+
+```bash
+docker run --rm -v "$PWD/mosquitto/config:/mosquitto/config" eclipse-mosquitto:2 mosquitto_passwd -b /mosquitto/config/passwordfile.txt view viewpassword123
+```
+
+poi `docker compose restart mosquitto`. I permessi sono in `mosquitto/config/aclfile`.
+
+**Comandi da tastiera:** `D` pannello di debug, `H` mappa di calore, `M` modalità dati, `2`/`3` planimetria 2D o vista 3D, `Esc` deseleziona. Doppio clic su un palazzo per volarci; clic su un appartamento (o un dispositivo) per la scheda di dettaglio; clic sulla minimappa per spostare la vista.
+
+**Scenari** (restano fuori dalla vista, V10):
+
+```bash
+docker exec iot_mosquitto mosquitto_pub -u admin -P adminpassword123 -t Complex/control/scenario -m '{"action":"start","scenario":"fire","target":"A-2-1"}'
+```
+
+### 3.2 Verifica a vista
+
+Ripercorsa il 2026-10-01 nel browser (container su :8080 e server di sviluppo su :5173), insieme al copione della demo (specifica §13). ✅ = visto; ☐ = da ricontrollare a occhio alla prossima prova.
+
+**Attuatori (specifica §7.4)**
+
+- [x] `window`: ante ruotate di 70° (verso l'esterno, per restare visibili) su tutte le finestre dell'appartamento
+- [x] `blinds`: tapparella abbassata di (100 − `position`) %
+- [x] `lights`: lampade a soffitto sul piano tagliato; di notte finestre accese in proporzione a `level`
+- [x] `hvac`: split con flusso di particelle rosse in `heat`
+- [ ] `hvac` in `cool`: flusso blu (stesso codice di `heat`, non guardato da vicino)
+- [ ] `ventilation`: griglia che ruota con `level` (troppo piccola per vederla negli screenshot)
+- [ ] `gas_valve`: maniglia parallela/perpendicolare (visto lo stato nell'etichetta, non la maniglia)
+- [x] `alarm`: lampeggiante rosso sul soffitto del disimpegno
+- [ ] `evacuation_siren`: lampeggiante rosso sul pianerottolo
+- [x] `resident_display`: pannello colorato con il messaggio ("Prova", giallo)
+- [ ] `stair_lights`: spente, normali, `evacuation` verdi lampeggianti
+- [x] `smoke_vent`: botola sollevata sul tetto
+- [x] `elevator`: `recall` con porte aperte e spia rossa
+- [x] `battery`: barra con `soc_pct` e freccia in carica
+- [x] `irrigation`: getti d'acqua agli irrigatori
+- [x] `park_lights`: lampioni accesi
+- [x] `evacuation_signs`: cartelli verdi luminosi all'uscita degli androni e al centro del parco
+- [x] `ev_charger`: auto presente con `car_connected`, LED che pulsa in carica
+
+**Emergenze (specifica §7.8)**
+
+- [x] Pulsazione rossa con `smoke`, `gas` o `co` sopra il riposo, anche con la mappa di calore spenta
+- [x] Fumo dalle finestre e dal vano scale, che si estende agli appartamenti vicini
+- [x] Fuoco: bagliore arancione tremolante nelle finestre
+- [x] Gas: foschia verdastra sul piano tagliato (fuga in B-1-2)
+- [x] Monossido: icona "☠ CO" sull'appartamento
+- [ ] Sisma: scossa della camera (0,42 m a 5,8 Mw: non distinguibile negli screenshot)
+- [x] Allarmi: lampeggiante rosso (`alarm`)
+
+**Navigazione e stile**
+
+- [x] 3D ↔ 2D (`2`/`3`): planimetria ortografica, nord in alto, piano terra di default, niente rotazione
+- [x] Filtro palazzo (gli altri sbiaditi, volo sul palazzo) e filtro piano (spaccato e piani superiori fantasma)
+- [x] Minimappa con nord, palazzo e piano correnti, cono della camera; clic per spostare la vista
+- [x] Giorno → notte: alba a ×60, digital twin di sera con finestre accese e contorni azzurri, sole basso d'inverno
+- [x] Meteo: pioggia, cielo coperto, alberi che ondeggiano, anemometro
+- [x] Modalità dati (`M`): stile plastico, colore solo sui dati
+- [x] Mappa di calore spenta (`H`): nessuna tinta, legenda nascosta, emergenze ancora rosse
+- [x] Sensori non aggiornati (simulatore fermo): grigio tratteggiato, "non aggiornato" nella scheda, banner "simulatore non in linea"
+
+| Giorno, panoramica | Piano tagliato con scheda | Notte, incendio |
+|---|---|---|
+| ![Panoramica di giorno](img/vista-3d-giorno.png) | ![Piano 2 di A con la scheda di A-2-1](img/vista-3d-piano-scheda.png) | ![Incendio in A di notte](img/vista-3d-notte-incendio.png) |
 
 ---
 
 ## 4. Domande aperte
 
 - ✅ ~~Revisione della specifica scritta~~: approvata il 2026-09-30
-- ❓ Revisione del [piano di implementazione](superpowers/plans/2026-09-30-vista-3d.md) (15 task in 6 tappe) e scelta del modo di esecuzione
+- ✅ ~~Revisione del [piano di implementazione](superpowers/plans/2026-09-30-vista-3d.md) e scelta del modo di esecuzione~~: piano approvato, esecuzione in linea
 - ✅ ~~Relazione tra 2D e 3D~~: stessa scena, camera ortografica dall'alto (V14)
 - ✅ ~~Collegamento del browser a MQTT e credenziali~~: WebSocket, utente `view` con ACL (V15)
 - ✅ ~~Prestazioni e interpolazione~~: V16 e specifica §10
@@ -112,3 +194,9 @@ La vista è **solo una vista**: nessuna logica di simulazione al suo interno. Le
 | 2026-09-30 | Decisione V14: React Three Fiber, container statico `view`, collegamento diretto al broker via WebSocket |
 | 2026-09-30 | Design approvato in 5 sezioni (decisioni V15–V18); scritta la specifica della fase 1; aggiunti la guida "Dove trovare cosa" e il piano delle tappe |
 | 2026-09-30 | Specifica approvata; scritto il piano di implementazione (15 task, tappe T1–T6) |
+| 2026-09-30 | Tappa T1 completata: WebSocket 9001, ACL e utente `view` in Mosquitto; servizio `view` (nginx, `config.js`); collegamento MQTT, store e banner di stato |
+| 2026-09-30 | Tappa T2 completata: `layout` dei palazzi a 26 m e 3,2 m; scena statica generata dal modello (palazzi con pianta tipo, parco, parcheggio); camera, filtri palazzo e piano, 2D/3D, minimappa, barra in alto e scorciatoie |
+| 2026-09-30 | Tappa T3 completata: pannello di debug (tasto D) con comandi agli attuatori validati sul catalogo, registro con esito dell'ack, orologio (velocità e salti); prova end-to-end 5/5 |
+| 2026-09-30 | Tappa T4 completata: mappa di calore interpolata con legenda, etichette per livello di zoom, selezione e scheda di dettaglio con storico breve, attuatori animati, persone e auto |
+| 2026-09-30 | Tappa T5 completata: sole dell'Aquila dall'ora simulata e passaggio giorno → digital twin notturno, modalità dati, pioggia, vento e nuvole, fumo, fuoco, gas, CO e scossa del sisma derivati dai sensori |
+| 2026-10-01 | Tappa T6 completata: guida d'avvio e verifica a vista (sezioni 3.1–3.2), README e `MONITOR.md` aggiornati, copione della demo provato da capo a fondo; fase 1 disponibile |

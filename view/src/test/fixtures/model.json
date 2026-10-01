@@ -1,0 +1,2462 @@
+{
+ "complex": {
+  "name": "Residenza Parco",
+  "lat": null,
+  "lon": null,
+  "seed": 42,
+  "sampling_period_s": 10,
+  "actuator_state_period_s": 60,
+  "physics_step_s": 1,
+  "clock": {
+   "speed": 1,
+   "max_speed": 60
+  }
+ },
+ "device_types": {
+  "temperature": {
+   "kind": "sensor",
+   "unit": "°C",
+   "valid_range": [
+    -40,
+    150
+   ],
+   "noise": 0.1,
+   "rest_value": null,
+   "stuck_check": true,
+   "drift_check": true
+  },
+  "humidity": {
+   "kind": "sensor",
+   "unit": "%",
+   "valid_range": [
+    0,
+    100
+   ],
+   "noise": 0.5,
+   "rest_value": null,
+   "stuck_check": true,
+   "drift_check": true
+  },
+  "co2": {
+   "kind": "sensor",
+   "unit": "ppm",
+   "valid_range": [
+    0,
+    10000
+   ],
+   "noise": 10,
+   "rest_value": null,
+   "stuck_check": true,
+   "drift_check": true
+  },
+  "noise_level": {
+   "kind": "sensor",
+   "unit": "dB",
+   "valid_range": [
+    20,
+    130
+   ],
+   "noise": 0.5,
+   "rest_value": null,
+   "stuck_check": true,
+   "drift_check": false
+  },
+  "occupancy": {
+   "kind": "sensor",
+   "unit": "persone",
+   "valid_range": [
+    0,
+    50
+   ],
+   "noise": 0,
+   "rest_value": 0,
+   "stuck_check": false,
+   "drift_check": false
+  },
+  "light": {
+   "kind": "sensor",
+   "unit": "lux",
+   "valid_range": [
+    0,
+    120000
+   ],
+   "noise": 5,
+   "rest_value": 0,
+   "stuck_check": true,
+   "drift_check": false
+  },
+  "smoke": {
+   "kind": "sensor",
+   "unit": "%",
+   "valid_range": [
+    0,
+    100
+   ],
+   "noise": 0.05,
+   "rest_value": 0,
+   "stuck_check": true,
+   "drift_check": false
+  },
+  "gas": {
+   "kind": "sensor",
+   "unit": "%LEL",
+   "valid_range": [
+    0,
+    100
+   ],
+   "noise": 0.2,
+   "rest_value": 0,
+   "stuck_check": true,
+   "drift_check": false
+  },
+  "co": {
+   "kind": "sensor",
+   "unit": "ppm",
+   "valid_range": [
+    0,
+    1000
+   ],
+   "noise": 1,
+   "rest_value": 0,
+   "stuck_check": true,
+   "drift_check": false
+  },
+  "power": {
+   "kind": "sensor",
+   "unit": "W",
+   "valid_range": [
+    0,
+    20000
+   ],
+   "noise": 5,
+   "rest_value": 0,
+   "stuck_check": true,
+   "drift_check": false
+  },
+  "water_flow": {
+   "kind": "sensor",
+   "unit": "L/min",
+   "valid_range": [
+    0,
+    30
+   ],
+   "noise": 0.1,
+   "rest_value": 0,
+   "stuck_check": true,
+   "drift_check": false
+  },
+  "gas_flow": {
+   "kind": "sensor",
+   "unit": "m³/h",
+   "valid_range": [
+    0,
+    5
+   ],
+   "noise": 0.01,
+   "rest_value": 0,
+   "stuck_check": true,
+   "drift_check": false
+  },
+  "pv_power": {
+   "kind": "sensor",
+   "unit": "W",
+   "valid_range": [
+    0,
+    50000
+   ],
+   "noise": 20,
+   "rest_value": 0,
+   "stuck_check": true,
+   "drift_check": false
+  },
+  "rain_level": {
+   "kind": "sensor",
+   "unit": "mm/h",
+   "valid_range": [
+    0,
+    300
+   ],
+   "noise": 0.1,
+   "rest_value": 0,
+   "stuck_check": true,
+   "drift_check": false
+  },
+  "wind_speed": {
+   "kind": "sensor",
+   "unit": "km/h",
+   "valid_range": [
+    0,
+    200
+   ],
+   "noise": 0.5,
+   "rest_value": 0,
+   "stuck_check": true,
+   "drift_check": false
+  },
+  "seismic": {
+   "kind": "sensor",
+   "unit": "Mw",
+   "valid_range": [
+    0,
+    10
+   ],
+   "noise": 0.02,
+   "rest_value": null,
+   "stuck_check": true,
+   "drift_check": false
+  },
+  "pm10": {
+   "kind": "sensor",
+   "unit": "µg/m³",
+   "valid_range": [
+    0,
+    1000
+   ],
+   "noise": 1,
+   "rest_value": null,
+   "stuck_check": true,
+   "drift_check": false
+  },
+  "pm2_5": {
+   "kind": "sensor",
+   "unit": "µg/m³",
+   "valid_range": [
+    0,
+    1000
+   ],
+   "noise": 0.5,
+   "rest_value": null,
+   "stuck_check": true,
+   "drift_check": false
+  },
+  "soil_moisture": {
+   "kind": "sensor",
+   "unit": "%",
+   "valid_range": [
+    0,
+    100
+   ],
+   "noise": 0.2,
+   "rest_value": null,
+   "stuck_check": true,
+   "drift_check": false
+  },
+  "hvac": {
+   "kind": "actuator",
+   "commands": {
+    "mode": {
+     "enum": [
+      "off",
+      "heat",
+      "cool"
+     ]
+    },
+    "setpoint": {
+     "min": 16,
+     "max": 30
+    }
+   },
+   "default": {
+    "mode": "off",
+    "setpoint": 21
+   },
+   "power_w": {
+    "by": "mode",
+    "map": {
+     "off": 0,
+     "heat": 100,
+     "cool": 1500
+    }
+   },
+   "essential": false
+  },
+  "ventilation": {
+   "kind": "actuator",
+   "commands": {
+    "level": {
+     "min": 0,
+     "max": 3,
+     "integer": true
+    }
+   },
+   "default": {
+    "level": 1
+   },
+   "power_w": {
+    "by": "level",
+    "per_unit": 30
+   },
+   "essential": false
+  },
+  "window": {
+   "kind": "actuator",
+   "commands": {
+    "position": {
+     "enum": [
+      "open",
+      "closed"
+     ]
+    }
+   },
+   "default": {
+    "position": "closed"
+   },
+   "power_w": {
+    "const": 0
+   },
+   "essential": false
+  },
+  "blinds": {
+   "kind": "actuator",
+   "commands": {
+    "position": {
+     "min": 0,
+     "max": 100
+    }
+   },
+   "default": {
+    "position": 100
+   },
+   "power_w": {
+    "const": 0
+   },
+   "essential": false
+  },
+  "lights": {
+   "kind": "actuator",
+   "commands": {
+    "level": {
+     "min": 0,
+     "max": 100
+    }
+   },
+   "default": {
+    "level": 0
+   },
+   "power_w": {
+    "by": "level",
+    "per_unit": 1
+   },
+   "essential": false
+  },
+  "gas_valve": {
+   "kind": "actuator",
+   "commands": {
+    "position": {
+     "enum": [
+      "open",
+      "closed"
+     ]
+    }
+   },
+   "default": {
+    "position": "open"
+   },
+   "power_w": {
+    "const": 0
+   },
+   "essential": true
+  },
+  "alarm": {
+   "kind": "actuator",
+   "commands": {
+    "siren": {
+     "enum": [
+      "on",
+      "off"
+     ]
+    }
+   },
+   "default": {
+    "siren": "off"
+   },
+   "power_w": {
+    "by": "siren",
+    "map": {
+     "on": 10,
+     "off": 0
+    }
+   },
+   "essential": true
+  },
+  "resident_display": {
+   "kind": "actuator",
+   "commands": {
+    "message": {
+     "string": true
+    },
+    "level": {
+     "enum": [
+      "info",
+      "warning",
+      "danger"
+     ]
+    },
+    "clear": {
+     "bool": true
+    }
+   },
+   "default": {
+    "message": "",
+    "level": "info"
+   },
+   "power_w": {
+    "const": 5
+   },
+   "essential": true
+  },
+  "stair_lights": {
+   "kind": "actuator",
+   "commands": {
+    "mode": {
+     "enum": [
+      "off",
+      "normal",
+      "evacuation"
+     ]
+    }
+   },
+   "default": {
+    "mode": "off"
+   },
+   "power_w": {
+    "by": "mode",
+    "map": {
+     "off": 0,
+     "normal": 50,
+     "evacuation": 80
+    }
+   },
+   "essential": true
+  },
+  "smoke_vent": {
+   "kind": "actuator",
+   "commands": {
+    "position": {
+     "enum": [
+      "open",
+      "closed"
+     ]
+    }
+   },
+   "default": {
+    "position": "closed"
+   },
+   "power_w": {
+    "const": 0
+   },
+   "essential": true
+  },
+  "evacuation_siren": {
+   "kind": "actuator",
+   "commands": {
+    "siren": {
+     "enum": [
+      "on",
+      "off"
+     ]
+    }
+   },
+   "default": {
+    "siren": "off"
+   },
+   "power_w": {
+    "by": "siren",
+    "map": {
+     "on": 20,
+     "off": 0
+    }
+   },
+   "essential": true
+  },
+  "elevator": {
+   "kind": "actuator",
+   "commands": {
+    "mode": {
+     "enum": [
+      "normal",
+      "recall"
+     ]
+    }
+   },
+   "default": {
+    "mode": "normal"
+   },
+   "power_w": {
+    "by": "mode",
+    "map": {
+     "normal": 500,
+     "recall": 100
+    }
+   },
+   "essential": true
+  },
+  "battery": {
+   "kind": "actuator",
+   "commands": {
+    "mode": {
+     "enum": [
+      "charge",
+      "discharge",
+      "idle"
+     ]
+    }
+   },
+   "default": {
+    "mode": "idle"
+   },
+   "power_w": {
+    "dynamic": true
+   },
+   "essential": false
+  },
+  "irrigation": {
+   "kind": "actuator",
+   "commands": {
+    "state": {
+     "enum": [
+      "on",
+      "off"
+     ]
+    }
+   },
+   "default": {
+    "state": "off"
+   },
+   "power_w": {
+    "by": "state",
+    "map": {
+     "on": 500,
+     "off": 0
+    }
+   },
+   "essential": false
+  },
+  "park_lights": {
+   "kind": "actuator",
+   "commands": {
+    "state": {
+     "enum": [
+      "on",
+      "off"
+     ]
+    }
+   },
+   "default": {
+    "state": "off"
+   },
+   "power_w": {
+    "by": "state",
+    "map": {
+     "on": 2000,
+     "off": 0
+    }
+   },
+   "essential": false
+  },
+  "evacuation_signs": {
+   "kind": "actuator",
+   "commands": {
+    "state": {
+     "enum": [
+      "on",
+      "off"
+     ]
+    }
+   },
+   "default": {
+    "state": "off"
+   },
+   "power_w": {
+    "by": "state",
+    "map": {
+     "on": 200,
+     "off": 0
+    }
+   },
+   "essential": true
+  },
+  "ev_charger": {
+   "kind": "actuator",
+   "commands": {
+    "mode": {
+     "enum": [
+      "charge",
+      "pause"
+     ]
+    },
+    "max_power_w": {
+     "min": 0,
+     "max": 11000
+    }
+   },
+   "default": {
+    "mode": "charge",
+    "max_power_w": 7400
+   },
+   "power_w": {
+    "dynamic": true
+   },
+   "essential": false
+  }
+ },
+ "profiles": {
+  "famiglia": {
+   "residents": [
+    3,
+    4
+   ],
+   "weight": 0.4
+  },
+  "lavoratori": {
+   "residents": [
+    1,
+    2
+   ],
+   "weight": 0.3
+  },
+  "anziano": {
+   "residents": [
+    1,
+    2
+   ],
+   "weight": 0.15
+  },
+  "studenti": {
+   "residents": [
+    2,
+    3
+   ],
+   "weight": 0.15
+  }
+ },
+ "units": [
+  {
+   "id": "A",
+   "kind": "building",
+   "area": "A",
+   "sensors": [
+    "pv_power"
+   ],
+   "actuators": [
+    "elevator",
+    "battery"
+   ],
+   "attrs": {
+    "floors": 4,
+    "pv_peak_w": 20000,
+    "battery_kwh": 40,
+    "battery_max_w": 10000,
+    "layout": {
+     "x_m": 0,
+     "y_m": 45,
+     "rotation_deg": 0,
+     "width_m": 26,
+     "depth_m": 12,
+     "floor_height_m": 3.2
+    }
+   },
+   "adjacent": []
+  },
+  {
+   "id": "A-0-1",
+   "kind": "apartment",
+   "area": "A",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "A",
+    "floor": 0,
+    "number": 1,
+    "profile": "anziano",
+    "residents": 1,
+    "orientation": "S",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "A-0-2",
+    "A-1-1",
+    "A-S"
+   ]
+  },
+  {
+   "id": "A-0-2",
+   "kind": "apartment",
+   "area": "A",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "A",
+    "floor": 0,
+    "number": 2,
+    "profile": "studenti",
+    "residents": 2,
+    "orientation": "N",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "A-0-1",
+    "A-1-2",
+    "A-S"
+   ]
+  },
+  {
+   "id": "A-1-1",
+   "kind": "apartment",
+   "area": "A",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "A",
+    "floor": 1,
+    "number": 1,
+    "profile": "famiglia",
+    "residents": 4,
+    "orientation": "S",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "A-0-1",
+    "A-1-2",
+    "A-2-1",
+    "A-S"
+   ]
+  },
+  {
+   "id": "A-1-2",
+   "kind": "apartment",
+   "area": "A",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "A",
+    "floor": 1,
+    "number": 2,
+    "profile": "famiglia",
+    "residents": 4,
+    "orientation": "N",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "A-0-2",
+    "A-1-1",
+    "A-2-2",
+    "A-S"
+   ]
+  },
+  {
+   "id": "A-2-1",
+   "kind": "apartment",
+   "area": "A",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "A",
+    "floor": 2,
+    "number": 1,
+    "profile": "anziano",
+    "residents": 2,
+    "orientation": "S",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "A-1-1",
+    "A-2-2",
+    "A-3-1",
+    "A-S"
+   ]
+  },
+  {
+   "id": "A-2-2",
+   "kind": "apartment",
+   "area": "A",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "A",
+    "floor": 2,
+    "number": 2,
+    "profile": "anziano",
+    "residents": 2,
+    "orientation": "N",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "A-1-2",
+    "A-2-1",
+    "A-3-2",
+    "A-S"
+   ]
+  },
+  {
+   "id": "A-3-1",
+   "kind": "apartment",
+   "area": "A",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "A",
+    "floor": 3,
+    "number": 1,
+    "profile": "famiglia",
+    "residents": 3,
+    "orientation": "S",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "A-2-1",
+    "A-3-2",
+    "A-S"
+   ]
+  },
+  {
+   "id": "A-3-2",
+   "kind": "apartment",
+   "area": "A",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "A",
+    "floor": 3,
+    "number": 2,
+    "profile": "famiglia",
+    "residents": 4,
+    "orientation": "N",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "A-2-2",
+    "A-3-1",
+    "A-S"
+   ]
+  },
+  {
+   "id": "A-S",
+   "kind": "stairwell",
+   "area": "A",
+   "sensors": [
+    "temperature",
+    "smoke",
+    "light",
+    "occupancy"
+   ],
+   "actuators": [
+    "stair_lights",
+    "smoke_vent",
+    "evacuation_siren"
+   ],
+   "attrs": {
+    "building": "A"
+   },
+   "adjacent": [
+    "A-0-1",
+    "A-0-2",
+    "A-1-1",
+    "A-1-2",
+    "A-2-1",
+    "A-2-2",
+    "A-3-1",
+    "A-3-2"
+   ]
+  },
+  {
+   "id": "B",
+   "kind": "building",
+   "area": "B",
+   "sensors": [
+    "pv_power"
+   ],
+   "actuators": [
+    "elevator",
+    "battery"
+   ],
+   "attrs": {
+    "floors": 4,
+    "pv_peak_w": 20000,
+    "battery_kwh": 40,
+    "battery_max_w": 10000,
+    "layout": {
+     "x_m": 50,
+     "y_m": 0,
+     "rotation_deg": 90,
+     "width_m": 26,
+     "depth_m": 12,
+     "floor_height_m": 3.2
+    }
+   },
+   "adjacent": []
+  },
+  {
+   "id": "B-0-1",
+   "kind": "apartment",
+   "area": "B",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "B",
+    "floor": 0,
+    "number": 1,
+    "profile": "lavoratori",
+    "residents": 1,
+    "orientation": "O",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "B-0-2",
+    "B-1-1",
+    "B-S"
+   ]
+  },
+  {
+   "id": "B-0-2",
+   "kind": "apartment",
+   "area": "B",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "B",
+    "floor": 0,
+    "number": 2,
+    "profile": "anziano",
+    "residents": 1,
+    "orientation": "E",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "B-0-1",
+    "B-1-2",
+    "B-S"
+   ]
+  },
+  {
+   "id": "B-1-1",
+   "kind": "apartment",
+   "area": "B",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "B",
+    "floor": 1,
+    "number": 1,
+    "profile": "famiglia",
+    "residents": 3,
+    "orientation": "O",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "B-0-1",
+    "B-1-2",
+    "B-2-1",
+    "B-S"
+   ]
+  },
+  {
+   "id": "B-1-2",
+   "kind": "apartment",
+   "area": "B",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "B",
+    "floor": 1,
+    "number": 2,
+    "profile": "famiglia",
+    "residents": 4,
+    "orientation": "E",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "B-0-2",
+    "B-1-1",
+    "B-2-2",
+    "B-S"
+   ]
+  },
+  {
+   "id": "B-2-1",
+   "kind": "apartment",
+   "area": "B",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "B",
+    "floor": 2,
+    "number": 1,
+    "profile": "anziano",
+    "residents": 2,
+    "orientation": "O",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "B-1-1",
+    "B-2-2",
+    "B-3-1",
+    "B-S"
+   ]
+  },
+  {
+   "id": "B-2-2",
+   "kind": "apartment",
+   "area": "B",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "B",
+    "floor": 2,
+    "number": 2,
+    "profile": "studenti",
+    "residents": 2,
+    "orientation": "E",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "B-1-2",
+    "B-2-1",
+    "B-3-2",
+    "B-S"
+   ]
+  },
+  {
+   "id": "B-3-1",
+   "kind": "apartment",
+   "area": "B",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "B",
+    "floor": 3,
+    "number": 1,
+    "profile": "famiglia",
+    "residents": 3,
+    "orientation": "O",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "B-2-1",
+    "B-3-2",
+    "B-S"
+   ]
+  },
+  {
+   "id": "B-3-2",
+   "kind": "apartment",
+   "area": "B",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "B",
+    "floor": 3,
+    "number": 2,
+    "profile": "studenti",
+    "residents": 2,
+    "orientation": "E",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "B-2-2",
+    "B-3-1",
+    "B-S"
+   ]
+  },
+  {
+   "id": "B-S",
+   "kind": "stairwell",
+   "area": "B",
+   "sensors": [
+    "temperature",
+    "smoke",
+    "light",
+    "occupancy"
+   ],
+   "actuators": [
+    "stair_lights",
+    "smoke_vent",
+    "evacuation_siren"
+   ],
+   "attrs": {
+    "building": "B"
+   },
+   "adjacent": [
+    "B-0-1",
+    "B-0-2",
+    "B-1-1",
+    "B-1-2",
+    "B-2-1",
+    "B-2-2",
+    "B-3-1",
+    "B-3-2"
+   ]
+  },
+  {
+   "id": "C",
+   "kind": "building",
+   "area": "C",
+   "sensors": [
+    "pv_power"
+   ],
+   "actuators": [
+    "elevator",
+    "battery"
+   ],
+   "attrs": {
+    "floors": 4,
+    "pv_peak_w": 20000,
+    "battery_kwh": 40,
+    "battery_max_w": 10000,
+    "layout": {
+     "x_m": 0,
+     "y_m": -45,
+     "rotation_deg": 0,
+     "width_m": 26,
+     "depth_m": 12,
+     "floor_height_m": 3.2
+    }
+   },
+   "adjacent": []
+  },
+  {
+   "id": "C-0-1",
+   "kind": "apartment",
+   "area": "C",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "C",
+    "floor": 0,
+    "number": 1,
+    "profile": "famiglia",
+    "residents": 4,
+    "orientation": "N",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "C-0-2",
+    "C-1-1",
+    "C-S"
+   ]
+  },
+  {
+   "id": "C-0-2",
+   "kind": "apartment",
+   "area": "C",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "C",
+    "floor": 0,
+    "number": 2,
+    "profile": "lavoratori",
+    "residents": 2,
+    "orientation": "S",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "C-0-1",
+    "C-1-2",
+    "C-S"
+   ]
+  },
+  {
+   "id": "C-1-1",
+   "kind": "apartment",
+   "area": "C",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "C",
+    "floor": 1,
+    "number": 1,
+    "profile": "famiglia",
+    "residents": 3,
+    "orientation": "N",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "C-0-1",
+    "C-1-2",
+    "C-2-1",
+    "C-S"
+   ]
+  },
+  {
+   "id": "C-1-2",
+   "kind": "apartment",
+   "area": "C",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "C",
+    "floor": 1,
+    "number": 2,
+    "profile": "famiglia",
+    "residents": 3,
+    "orientation": "S",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "C-0-2",
+    "C-1-1",
+    "C-2-2",
+    "C-S"
+   ]
+  },
+  {
+   "id": "C-2-1",
+   "kind": "apartment",
+   "area": "C",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "C",
+    "floor": 2,
+    "number": 1,
+    "profile": "famiglia",
+    "residents": 4,
+    "orientation": "N",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "C-1-1",
+    "C-2-2",
+    "C-3-1",
+    "C-S"
+   ]
+  },
+  {
+   "id": "C-2-2",
+   "kind": "apartment",
+   "area": "C",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "C",
+    "floor": 2,
+    "number": 2,
+    "profile": "lavoratori",
+    "residents": 2,
+    "orientation": "S",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "C-1-2",
+    "C-2-1",
+    "C-3-2",
+    "C-S"
+   ]
+  },
+  {
+   "id": "C-3-1",
+   "kind": "apartment",
+   "area": "C",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "C",
+    "floor": 3,
+    "number": 1,
+    "profile": "lavoratori",
+    "residents": 2,
+    "orientation": "N",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "C-2-1",
+    "C-3-2",
+    "C-S"
+   ]
+  },
+  {
+   "id": "C-3-2",
+   "kind": "apartment",
+   "area": "C",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "C",
+    "floor": 3,
+    "number": 2,
+    "profile": "famiglia",
+    "residents": 4,
+    "orientation": "S",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "C-2-2",
+    "C-3-1",
+    "C-S"
+   ]
+  },
+  {
+   "id": "C-S",
+   "kind": "stairwell",
+   "area": "C",
+   "sensors": [
+    "temperature",
+    "smoke",
+    "light",
+    "occupancy"
+   ],
+   "actuators": [
+    "stair_lights",
+    "smoke_vent",
+    "evacuation_siren"
+   ],
+   "attrs": {
+    "building": "C"
+   },
+   "adjacent": [
+    "C-0-1",
+    "C-0-2",
+    "C-1-1",
+    "C-1-2",
+    "C-2-1",
+    "C-2-2",
+    "C-3-1",
+    "C-3-2"
+   ]
+  },
+  {
+   "id": "D",
+   "kind": "building",
+   "area": "D",
+   "sensors": [
+    "pv_power"
+   ],
+   "actuators": [
+    "elevator",
+    "battery"
+   ],
+   "attrs": {
+    "floors": 4,
+    "pv_peak_w": 20000,
+    "battery_kwh": 40,
+    "battery_max_w": 10000,
+    "layout": {
+     "x_m": -50,
+     "y_m": 0,
+     "rotation_deg": 90,
+     "width_m": 26,
+     "depth_m": 12,
+     "floor_height_m": 3.2
+    }
+   },
+   "adjacent": []
+  },
+  {
+   "id": "D-0-1",
+   "kind": "apartment",
+   "area": "D",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "D",
+    "floor": 0,
+    "number": 1,
+    "profile": "studenti",
+    "residents": 3,
+    "orientation": "E",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "D-0-2",
+    "D-1-1",
+    "D-S"
+   ]
+  },
+  {
+   "id": "D-0-2",
+   "kind": "apartment",
+   "area": "D",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "D",
+    "floor": 0,
+    "number": 2,
+    "profile": "lavoratori",
+    "residents": 2,
+    "orientation": "O",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "D-0-1",
+    "D-1-2",
+    "D-S"
+   ]
+  },
+  {
+   "id": "D-1-1",
+   "kind": "apartment",
+   "area": "D",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "D",
+    "floor": 1,
+    "number": 1,
+    "profile": "lavoratori",
+    "residents": 1,
+    "orientation": "E",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "D-0-1",
+    "D-1-2",
+    "D-2-1",
+    "D-S"
+   ]
+  },
+  {
+   "id": "D-1-2",
+   "kind": "apartment",
+   "area": "D",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "D",
+    "floor": 1,
+    "number": 2,
+    "profile": "famiglia",
+    "residents": 4,
+    "orientation": "O",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "D-0-2",
+    "D-1-1",
+    "D-2-2",
+    "D-S"
+   ]
+  },
+  {
+   "id": "D-2-1",
+   "kind": "apartment",
+   "area": "D",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "D",
+    "floor": 2,
+    "number": 1,
+    "profile": "lavoratori",
+    "residents": 1,
+    "orientation": "E",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "D-1-1",
+    "D-2-2",
+    "D-3-1",
+    "D-S"
+   ]
+  },
+  {
+   "id": "D-2-2",
+   "kind": "apartment",
+   "area": "D",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "D",
+    "floor": 2,
+    "number": 2,
+    "profile": "lavoratori",
+    "residents": 1,
+    "orientation": "O",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "D-1-2",
+    "D-2-1",
+    "D-3-2",
+    "D-S"
+   ]
+  },
+  {
+   "id": "D-3-1",
+   "kind": "apartment",
+   "area": "D",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "D",
+    "floor": 3,
+    "number": 1,
+    "profile": "lavoratori",
+    "residents": 1,
+    "orientation": "E",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "D-2-1",
+    "D-3-2",
+    "D-S"
+   ]
+  },
+  {
+   "id": "D-3-2",
+   "kind": "apartment",
+   "area": "D",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "co2",
+    "noise_level",
+    "occupancy",
+    "light",
+    "smoke",
+    "gas",
+    "co",
+    "power",
+    "water_flow",
+    "gas_flow"
+   ],
+   "actuators": [
+    "hvac",
+    "ventilation",
+    "window",
+    "blinds",
+    "lights",
+    "gas_valve",
+    "alarm",
+    "resident_display"
+   ],
+   "attrs": {
+    "building": "D",
+    "floor": 3,
+    "number": 2,
+    "profile": "famiglia",
+    "residents": 3,
+    "orientation": "O",
+    "area_m2": 80,
+    "height_m": 2.7,
+    "volume_m3": 216.0,
+    "insulation": "media"
+   },
+   "adjacent": [
+    "D-2-2",
+    "D-3-1",
+    "D-S"
+   ]
+  },
+  {
+   "id": "D-S",
+   "kind": "stairwell",
+   "area": "D",
+   "sensors": [
+    "temperature",
+    "smoke",
+    "light",
+    "occupancy"
+   ],
+   "actuators": [
+    "stair_lights",
+    "smoke_vent",
+    "evacuation_siren"
+   ],
+   "attrs": {
+    "building": "D"
+   },
+   "adjacent": [
+    "D-0-1",
+    "D-0-2",
+    "D-1-1",
+    "D-1-2",
+    "D-2-1",
+    "D-2-2",
+    "D-3-1",
+    "D-3-2"
+   ]
+  },
+  {
+   "id": "EV-A",
+   "kind": "charger",
+   "area": "parking",
+   "sensors": [],
+   "actuators": [
+    "ev_charger"
+   ],
+   "attrs": {
+    "building": "A",
+    "max_power_w": 7400
+   },
+   "adjacent": []
+  },
+  {
+   "id": "EV-B",
+   "kind": "charger",
+   "area": "parking",
+   "sensors": [],
+   "actuators": [
+    "ev_charger"
+   ],
+   "attrs": {
+    "building": "B",
+    "max_power_w": 7400
+   },
+   "adjacent": []
+  },
+  {
+   "id": "EV-C",
+   "kind": "charger",
+   "area": "parking",
+   "sensors": [],
+   "actuators": [
+    "ev_charger"
+   ],
+   "attrs": {
+    "building": "C",
+    "max_power_w": 7400
+   },
+   "adjacent": []
+  },
+  {
+   "id": "EV-D",
+   "kind": "charger",
+   "area": "parking",
+   "sensors": [],
+   "actuators": [
+    "ev_charger"
+   ],
+   "attrs": {
+    "building": "D",
+    "max_power_w": 7400
+   },
+   "adjacent": []
+  },
+  {
+   "id": "park",
+   "kind": "park",
+   "area": "park",
+   "sensors": [
+    "temperature",
+    "humidity",
+    "rain_level",
+    "wind_speed",
+    "light",
+    "noise_level",
+    "seismic",
+    "pm10",
+    "pm2_5",
+    "soil_moisture"
+   ],
+   "actuators": [
+    "irrigation",
+    "park_lights",
+    "evacuation_signs"
+   ],
+   "attrs": {
+    "area_m2": 3000
+   },
+   "adjacent": []
+  }
+ ],
+ "layouts": {
+  "park": {
+   "x_m": 0,
+   "y_m": 0,
+   "width_m": 60,
+   "depth_m": 50
+  },
+  "parking": {
+   "x_m": 0,
+   "y_m": -75,
+   "width_m": 40,
+   "depth_m": 15
+  }
+ },
+ "monitor": {
+  "stuck_readings": 6,
+  "offline_periods": 3,
+  "recovery_readings": 3,
+  "drift_window_min": 20,
+  "drift_slope": {
+   "temperature": 0.1,
+   "humidity": 0.5,
+   "co2": 20
+  },
+  "drift_delta": {
+   "temperature": 2.0,
+   "humidity": 8.0,
+   "co2": 300
+  },
+  "influx_batch_size": 500,
+  "influx_flush_s": 1,
+  "influx_buffer_max": 50000
+ }
+}
