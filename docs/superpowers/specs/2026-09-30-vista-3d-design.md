@@ -423,7 +423,7 @@ Scala continua blu → verde → giallo → arancio → rosso. La legenda in bas
 - **Clic su un attuatore:** lo seleziona nel pannello di debug.
 
 ### 8.8 Minimappa (in basso a sinistra)
-Secondo rendering della scena dall'alto con camera ortografica, 200 × 200 px, con il taglio di piano corrente. Mostra il nord, un'etichetta con palazzo e piano correnti e il **cono della camera** (visibile solo nella minimappa). Un clic sposta lì il punto guardato dalla camera.
+Secondo rendering della scena dall'alto con camera ortografica, 200 × 200 px, con il taglio di piano corrente. Mostra il nord, un'etichetta con palazzo e piano correnti, un **pallino sul punto inquadrato** (il centro della vista) e il **cono della camera**, che parte dalla camera e punta verso il pallino (visibili solo nella minimappa). Un clic inquadra il punto cliccato: la vista vi si centra mantenendo distanza e angolo, e il pallino finisce dove si è cliccato (`minimapMarker` in `domain/camera.ts`).
 
 ### 8.9 Pannello di debug (`D`)
 Pannello in sovraimpressione, chiuso di default.
@@ -442,7 +442,8 @@ Pannello in sovraimpressione, chiuso di default.
 | Nuovo `Complex/model` diverso | Scena ricostruita, `live` svuotato, selezione annullata |
 | Messaggio non valido o dispositivo sconosciuto | Scartato e contato (pannello di debug) |
 | Comando rifiutato dall'ACL o dal simulatore | Esito "rifiutato" nel registro dei comandi |
-| Modello con pianta non supportata | Blocchi senza stanze (sezione 7.2) |
+| Modello con pianta non supportata | Blocchi senza stanze (sezione 7.2), con i muri tagliati a 1,1 m anche in 3D |
+| Modello 3D esterno mancante o non valido (V20) | Sparisce solo il suo strato (arredi o residenti), con un errore in console; il resto della scena continua (`scene/ModelBoundary.tsx`) |
 | WebGL non disponibile | Messaggio esplicito al posto della scena |
 
 La vista non deve mai bloccarsi: ogni errore nei gestori dei messaggi viene intercettato e registrato in console.

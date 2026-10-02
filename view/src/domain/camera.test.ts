@@ -1,5 +1,5 @@
 import fixtureModel from '../test/fixtures/model.json';
-import { CAMERA_LIMITS, MINIMAP_EXTENT_M, MINIMAP_SIZE_PX, focusOnBuilding, minimapToWorld } from './camera';
+import { CAMERA_LIMITS, MINIMAP_EXTENT_M, MINIMAP_SIZE_PX, focusOnBuilding, minimapMarker, minimapToWorld } from './camera';
 import { buildComplexLayout } from './layout';
 import type { ComplexModelMsg } from './messages';
 
@@ -23,4 +23,18 @@ test('minimap to world, north up', () => {
   expect(minimapToWorld(200, 200, 200, 92)).toEqual({ x: 92, z: 92 });
   expect([MINIMAP_SIZE_PX, MINIMAP_EXTENT_M]).toEqual([200, 92]);
   expect(CAMERA_LIMITS).toEqual({ minDistance: 2, maxDistance: 350, maxPolarAngle: Math.PI * 0.47 });
+});
+
+test('the minimap dot marks the framed point; the wedge starts at the camera and points at it', () => {
+  const m = minimapMarker({ x: 72, z: -63 }, { x: 0, z: 0 }, 0.3);
+  expect(m.dot).toEqual({ x: 0, z: 0 });
+  expect(m.wedge.x).toBe(72);
+  expect(m.wedge.z).toBe(-63);
+  expect(m.wedge.yaw).toBeCloseTo(Math.atan2(-72, 63));
+});
+
+test('straight above the framed point (2D) the wedge keeps the camera heading', () => {
+  const m = minimapMarker({ x: 5, z: 5 }, { x: 5, z: 5 }, 1.2);
+  expect(m.dot).toEqual({ x: 5, z: 5 });
+  expect(m.wedge.yaw).toBe(1.2);
 });

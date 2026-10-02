@@ -3,7 +3,7 @@
 // cut floor (always the case in 2D) or inside an apartment in first person.
 import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { ComplexLayout } from '../domain/layout';
@@ -17,6 +17,7 @@ import { useLiveStore } from '../store/live';
 import { useUiStore } from '../store/ui';
 import { planLocal } from './geom';
 import { SLAB_M } from './modelFit';
+import { releaseResident } from './residentRig';
 
 const MAX_PEOPLE = 80;
 const REFRESH_S = 0.5;
@@ -66,11 +67,10 @@ export function People({ layout }: { layout: ComplexLayout }) {
   };
 
   const remove = (key: string, r: Resident) => {
-    r.mixer.stopAllAction();
-    r.mixer.uncacheRoot(r.root.children[0]);
-    group.current?.remove(r.root);
+    releaseResident(r.root, r.mixer);
     residents.current.delete(key);
   };
+  useEffect(() => () => { for (const [key, r] of residents.current) remove(key, r); }, []);
 
   const wanted = (): Wanted[] => {
     const ui = useUiStore.getState();

@@ -2,6 +2,9 @@
 // face, centred on the footprint and standing on the 0.12 m slab. Plan frame: x = u, z = v.
 import * as THREE from 'three';
 import type { Face, ModelPiece } from '../domain/furnitureModels';
+import type { ApartmentGeom, BuildingGeom } from '../domain/layout';
+import { PLINTH_M } from '../domain/plan';
+import { planLocal } from './geom';
 
 export const SLAB_M = 0.12;
 
@@ -38,4 +41,17 @@ export function fitItem(pieces: readonly ModelPiece[], boundsOf: (model: string)
     out.push({ piece, ...fitModel(boundsOf(piece.model), piece, base) });
   }
   return out;
+}
+
+/**
+ * Plan frame → world for one apartment. Positions follow the building's plan scale while the
+ * models keep their own proportions; interno 2 is interno 1 turned by 180°.
+ */
+export function apartmentMatrix(b: BuildingGeom, apt: ApartmentGeom, u: number, v: number): THREE.Matrix4 {
+  const [x, z] = planLocal(b, u, v, apt.mirrored);
+  return new THREE.Matrix4().makeTranslation(b.center.x, 0, b.center.z)
+    .multiply(new THREE.Matrix4().makeRotationY(b.rotationY))
+    .multiply(new THREE.Matrix4().makeTranslation(x, PLINTH_M + apt.floor * b.floorHeight, z))
+    .multiply(new THREE.Matrix4().makeRotationY(apt.mirrored ? Math.PI : 0))
+    .multiply(new THREE.Matrix4().makeTranslation(-u, 0, -v));
 }

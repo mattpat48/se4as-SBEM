@@ -23,3 +23,13 @@ export function focusOnBuilding(b: BuildingGeom): { position: Vec3; target: Vec3
 export function minimapToWorld(px: number, py: number, sizePx: number, extentM: number): { x: number; z: number } {
   return { x: -extentM + (px / sizePx) * 2 * extentM, z: -extentM + (py / sizePx) * 2 * extentM };
 }
+
+/**
+ * Minimap marker: the dot sits on the framed point (where a minimap click moves the view), the
+ * wedge starts at the camera and points at it. Straight above it (2D), the wedge keeps `headingYaw`.
+ */
+export function minimapMarker(camera: { x: number; z: number }, target: { x: number; z: number }, headingYaw: number) {
+  const dx = target.x - camera.x, dz = target.z - camera.z;
+  const yaw = Math.hypot(dx, dz) < 0.01 ? headingYaw : Math.atan2(dx, dz);
+  return { dot: { x: target.x, z: target.z }, wedge: { x: camera.x, z: camera.z, yaw } };
+}

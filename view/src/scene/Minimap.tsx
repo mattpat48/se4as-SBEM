@@ -1,9 +1,10 @@
-// Minimap (view spec §8.8): a second render pass from above, bottom-left, with the camera wedge
-// visible only to the minimap camera (layer 1), plus a DOM frame that handles clicks.
+// Minimap (view spec §8.8): a second render pass from above, bottom-left, with the framed point
+// and the camera wedge visible only to the minimap camera (layer 1), plus a DOM frame that handles
+// clicks: a click frames the clicked point, where the dot then sits.
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { MINIMAP_EXTENT_M, MINIMAP_SIZE_PX, minimapToWorld } from '../domain/camera';
+import { MINIMAP_EXTENT_M, MINIMAP_SIZE_PX, minimapMarker, minimapToWorld } from '../domain/camera';
 import { useUiStore } from '../store/ui';
 import { cameraApi } from './CameraRig';
 
@@ -30,21 +31,24 @@ export function MinimapPass() {
     c.layers.enable(MARKER_LAYER);
     return c;
   }, []);
-  const marker = useRef<THREE.Group>(null);
+  const wedgeRef = useRef<THREE.Mesh>(null);
+  const dotRef = useRef<THREE.Mesh>(null);
   const wedge = useMemo(wedgeGeometry, []);
   const markerMat = useMemo(() => new THREE.MeshBasicMaterial({
     color: '#f59e0b', transparent: true, opacity: 0.45, depthTest: false, side: THREE.DoubleSide,
   }), []);
   const dotMat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#f59e0b', depthTest: false }), []);
   const dir = useMemo(() => new THREE.Vector3(), []);
+  const target = useMemo(() => new THREE.Vector3(), []);
 
   useFrame(({ gl, scene, camera, size }) => {
-    const m = marker.current;
-    if (m) {
-      camera.getWorldDirection(dir);
-      m.position.set(camera.position.x, 40, camera.position.z);
-      m.rotation.y = Math.atan2(dir.x, dir.z);
-    }
+    camera.getWorldDirection(dir);
+    const c = cameraApi.controls;
+    if (c) c.getTarget(target); else target.copy(camera.position);
+    const m = minimapMarker(camera.position, target, Math.atan2(dir.x, dir.z));
+    wedgeRef.current?.position.set(m.wedge.x, 40, m.wedge.z);
+    wedgeRef.current?.rotation.set(0, m.wedge.yaw, 0);
+    dotRef.current?.position.set(m.dot.x, 40, m.dot.z);
     gl.autoClear = true;
     gl.setScissorTest(false);
     gl.setViewport(0, 0, size.width, size.height);
@@ -64,10 +68,12 @@ export function MinimapPass() {
     scene.fog = fog;
   }, 1);
 
+  const setWedge = (o: THREE.Mesh | null) => { wedgeRef.current = o; onMarkerLayer(o); };
+  const setDot = (o: THREE.Mesh | null) => { dotRef.current = o; onMarkerLayer(o); };
   return (
-    <group ref={marker}>
-      <mesh ref={onMarkerLayer} geometry={wedge} material={markerMat} renderOrder={999} />
-      <mesh ref={onMarkerLayer} material={dotMat} rotation={[-Math.PI / 2, 0, 0]} renderOrder={1000}>
+    <group>
+      <mesh ref={setWedge} geometry={wedge} material={markerMat} renderOrder={999} />
+      <mesh ref={setDot} material={dotMat} rotation={[-Math.PI / 2, 0, 0]} renderOrder={1000}>
         <circleGeometry args={[5, 20]} />
       </mesh>
     </group>

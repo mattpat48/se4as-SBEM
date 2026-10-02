@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Rigenera gli asset 3D della vista (decisione V20) dai pacchetti originali CC0:
-#   - arredi: Kenney Furniture Kit (GLB copiati così come sono);
-#   - residenti: Quaternius Ultimate Modular Women / Men (glTF → GLB compressi con meshopt,
-#     tenendo solo le animazioni usate dalla vista: Idle, Idle_Neutral, Walk).
-# Uso: scripts/build-models.sh   (richiede curl, unzip, python3, npx)
+# Regenerates the 3D view assets (decision V20) from the original CC0 packs:
+#   - furniture: Kenney Furniture Kit (GLBs copied as they are);
+#   - residents: Quaternius Ultimate Modular Women / Males (glTF -> meshopt-compressed GLB,
+#     keeping only the clips the view uses: Idle, Idle_Neutral, Walk).
+# Everything is built in a temporary folder and replaces view/public/models only on success.
+# Usage: scripts/build-models.sh   (needs curl, unzip, python3, npx)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -12,6 +13,7 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 GLTF_TRANSFORM=(npx -y @gltf-transform/cli@4.5.1)
 
+# Direct link from https://kenney.nl/assets/furniture-kit (it changes with new releases).
 KENNEY_ZIP="https://kenney.nl/media/pages/assets/furniture-kit/440e0608a4-1677580847/kenney_furniture-kit.zip"
 FURNITURE=(
   kitchenFridge kitchenCabinetDrawer kitchenStove kitchenCabinet kitchenSink
@@ -33,14 +35,14 @@ PEOPLE=(
 )
 CLIPS="Idle,Idle_Neutral,Walk"
 
-rm -rf "$OUT/furniture" "$OUT/people"
-mkdir -p "$OUT/furniture" "$OUT/people"
+NEW="$WORK/models"
+mkdir -p "$NEW/furniture" "$NEW/people"
 
 echo "Kenney Furniture Kit…"
 curl -fsSL "$KENNEY_ZIP" -o "$WORK/kenney.zip"
 unzip -q "$WORK/kenney.zip" -d "$WORK/kenney"
 for name in "${FURNITURE[@]}"; do
-  cp "$WORK/kenney/Models/GLTF format/$name.glb" "$OUT/furniture/"
+  cp "$WORK/kenney/Models/GLTF format/$name.glb" "$NEW/furniture/"
 done
 
 echo "Quaternius Ultimate Modular Women / Men…"
@@ -56,9 +58,11 @@ missing = keep - {a['name'] for a in doc['animations']}
 if missing: sys.exit(f'{path}: missing clips {sorted(missing)}')
 json.dump(doc, open(path, 'w'))
 PY
-  "${GLTF_TRANSFORM[@]}" optimize "$WORK/$name.gltf" "$OUT/people/$name.glb" --compress meshopt \
+  "${GLTF_TRANSFORM[@]}" optimize "$WORK/$name.gltf" "$NEW/people/$name.glb" --compress meshopt \
     --simplify false --instance false --flatten false --join false --palette false >/dev/null
 done
 
+rm -rf "$OUT/furniture" "$OUT/people"
+mv "$NEW/furniture" "$NEW/people" "$OUT/"
 du -sh "$OUT/furniture" "$OUT/people"
 ls -l "$OUT/people"

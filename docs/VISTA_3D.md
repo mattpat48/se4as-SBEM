@@ -185,6 +185,7 @@ I dispositivi mantengono il contratto di `placement.ts`: soltanto la resa dello 
 - [x] 3D ↔ 2D (`2`/`3`): planimetria ortografica, nord in alto, piano terra di default, niente rotazione
 - [x] Filtro palazzo (gli altri sbiaditi, volo sul palazzo) e filtro piano (spaccato e piani superiori fantasma)
 - [x] Minimappa con nord, palazzo e piano correnti, cono della camera; clic per spostare la vista
+- [x] Minimappa (correzione del 2026-10-02): il clic inquadra il punto cliccato e il pallino ci finisce sopra; prima il pallino segnava la camera, circa 95 m più indietro, e sembrava andare altrove
 - [x] Giorno → notte: alba a ×60, digital twin di sera con finestre accese e contorni azzurri, sole basso d'inverno
 - [x] Meteo: pioggia, cielo coperto, alberi che ondeggiano, anemometro
 - [x] Modalità dati (`M`): stile plastico, colore solo sui dati
@@ -236,3 +237,5 @@ I dispositivi mantengono il contratto di `placement.ts`: soltanto la resa dello 
 | 2026-10-01 | V19: arredi procedurali sul piano tagliato e dispositivi realistici, con palette giorno/notte/dati e selezione preservata; TDD su ingombri, passaggi, persone, superficie libera, altezze reali delle geometrie e sensori nei quattro palazzi. Verifica 2D/3D e misura FPS locale; 122 test, controllo TypeScript e build superati |
 | 2026-10-02 | Prova usa e getta di modelli esterni; decisione V20: arredi Kenney, residenti Quaternius vestiti, muri interi nello spaccato, pavimento in legno o colore della mappa di calore |
 | 2026-10-02 | V20 implementata con TDD: asset in `view/public/models/` (26 arredi Kenney e 8 personaggi Quaternius, 4 donne e 4 uomini, compressi con meshopt) e `scripts/build-models.sh`. Arredi istanziati e adattati con scala uniforme; residenti animati (al massimo 80); muri interi con vani finestra nello spaccato 3D; dispositivi alle quote reali; pavimento in legno generato a codice; 2D invariata. Eliminate le geometrie procedurali di arredi e persone. 154 test, controllo TypeScript, build e immagine Docker superati |
+| 2026-10-02 | Correzioni dopo la revisione indipendente di V20: un modello che non si carica fa sparire solo il suo strato (arredi o residenti); i residenti rimossi liberano gli scheletri sulla GPU (texture stabili cambiando piano); test del posizionamento in un palazzo ruotato con interno specchiato; blocchi di ripiego con muri a 1,1 m; script degli asset che sostituisce i file solo a fine lavoro (rieseguito: file identici) |
+| 2026-10-02 | Minimappa: il pallino segna il punto inquadrato (dove porta il clic), il cono parte dalla camera; prima segnava la camera e il clic sembrava portare altrove |

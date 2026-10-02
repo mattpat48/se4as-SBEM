@@ -150,7 +150,8 @@ export function Floor({ b, floor, mode, apartments, faded, stairwellId }: FloorP
         {!b.supportsPlan && feet.map(({ apt, rect }) => (
           [[rect.u0, 0, rect.u1, 0], [rect.u0, PLAN_D, rect.u1, PLAN_D], [rect.u0, 0, rect.u0, PLAN_D], [rect.u1, 0, rect.u1, PLAN_D]] as [number, number, number, number][]
         ).map((w, i) => (
-          <mesh key={`${apt.id}-${i}`} geometry={UNIT_BOX} material={mat('wall', faded)} {...planWall(b, w, y0, wallH, 0.2)} />
+          // Fallback blocks have no rooms or openings: whole walls would hide their heat-coloured floor.
+          <mesh key={`${apt.id}-${i}`} geometry={UNIT_BOX} material={mat('wall', faded)} {...planWall(b, w, y0, CUT_WALL_M, 0.2)} />
         )))}
       </group>
     );

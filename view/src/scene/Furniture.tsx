@@ -9,13 +9,11 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { furnitureForFloor } from '../domain/furniture';
 import { FURNITURE_MODEL_FILES, furnitureModelUrl, modelPieces } from '../domain/furnitureModels';
 import type { ApartmentGeom, BuildingGeom, ComplexLayout } from '../domain/layout';
-import { PLINTH_M } from '../domain/plan';
 import { buildingMode } from '../domain/visibility';
 import { useUiStore } from '../store/ui';
 import { atmosphere } from './atmosphere';
-import { planLocal } from './geom';
 import { mat } from './materials';
-import { fitItem } from './modelFit';
+import { apartmentMatrix, fitItem } from './modelFit';
 
 const URLS = FURNITURE_MODEL_FILES.map(furnitureModelUrl);
 useGLTF.preload(URLS, false);   // same key as the useGLTF(URLS) call below
@@ -71,19 +69,6 @@ function planPlacements(floor: number, bounds: Map<string, THREE.Box3>): Placeme
     else for (const fit of fitItem(modelPieces(f), (m) => bounds.get(m)!)) out.push({ model: fit.piece.model, matrix: fit.matrix, u, v });
   }
   return out;
-}
-
-/**
- * Plan frame → world for one apartment. Positions follow the building's plan scale while the
- * models keep their own proportions; interno 2 is interno 1 turned by 180°.
- */
-function apartmentMatrix(b: BuildingGeom, apt: ApartmentGeom, u: number, v: number): THREE.Matrix4 {
-  const [x, z] = planLocal(b, u, v, apt.mirrored);
-  return new THREE.Matrix4().makeTranslation(b.center.x, 0, b.center.z)
-    .multiply(new THREE.Matrix4().makeRotationY(b.rotationY))
-    .multiply(new THREE.Matrix4().makeTranslation(x, PLINTH_M + apt.floor * b.floorHeight, z))
-    .multiply(new THREE.Matrix4().makeRotationY(apt.mirrored ? Math.PI : 0))
-    .multiply(new THREE.Matrix4().makeTranslation(-u, 0, -v));
 }
 
 const ignorePick = () => {};

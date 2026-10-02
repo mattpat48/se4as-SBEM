@@ -14,6 +14,7 @@ import { HeatPainter } from './HeatPainter';
 import { Labels } from './Labels';
 import { Lighting } from './Lighting';
 import { MinimapPass } from './Minimap';
+import { ModelBoundary } from './ModelBoundary';
 import { People } from './People';
 import { Weather } from './Weather';
 
@@ -32,11 +33,10 @@ export function Viewport({ layout }: { layout: ComplexLayout }) {
       <Lighting />
       {apt ? <ApartmentInterior layout={layout} apt={apt}/> : <Complex layout={layout} />}
       <HeatPainter layout={layout} />
-      {/* External models load in the background; the rest of the scene does not wait for them. */}
-      <Suspense fallback={null}>
-        <Furniture layout={layout} />
-        <People layout={layout} />
-      </Suspense>
+      {/* External models load in the background, each layer on its own: the rest of the scene
+          neither waits for them nor fails with them. */}
+      <ModelBoundary name="arredi"><Suspense fallback={null}><Furniture layout={layout} /></Suspense></ModelBoundary>
+      <ModelBoundary name="residenti"><Suspense fallback={null}><People layout={layout} /></Suspense></ModelBoundary>
       <Hazards layout={layout} />
       {!apt && <Weather />}
       {!apt && <Labels layout={layout} />}

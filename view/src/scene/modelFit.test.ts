@@ -4,7 +4,9 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { FURNITURE } from '../domain/furniture';
 import { FURNITURE_MODEL_FILES, furnitureModelUrl, modelPieces } from '../domain/furnitureModels';
-import { SLAB_M, fitItem, fitModel } from './modelFit';
+import { buildComplexLayout, planToWorld } from '../domain/layout';
+import type { ComplexModelMsg } from '../domain/messages';
+import { SLAB_M, apartmentMatrix, fitItem, fitModel } from './modelFit';
 
 const PUBLIC = fileURLToPath(new URL('../../public', import.meta.url));
 const TOL = 0.02;
@@ -73,4 +75,20 @@ test('a stacked piece stands on the top of the previous one', () => {
   const top = boxes.get(cabinet.piece.model)!.clone().applyMatrix4(cabinet.matrix).max.y;
   expect(cabinet.top).toBeCloseTo(top, 9);
   expect(boxes.get(set.piece.model)!.clone().applyMatrix4(set.matrix).min.y).toBeCloseTo(top, 6);
+});
+
+test('apartment placement matches the plan in rotated buildings and in the mirrored interno 2', async () => {
+  const fixture = (await import('../test/fixtures/model.json')).default;
+  const layout = buildComplexLayout(fixture as unknown as ComplexModelMsg);
+  const b = layout.buildings.find((v) => Math.abs(Math.abs(v.rotationY) - Math.PI / 2) < 1e-6)!;
+  for (const apt of layout.apartments.filter((a) => a.building === b.id && a.floor === 2)) {
+    // A piece centred on (u, v), with a corner 0.4 m along u and 0.2 m along v.
+    const [u, v] = [2.2, 9.1];
+    const m = apartmentMatrix(b, apt, u, v);
+    for (const [du, dv, h] of [[0, 0, 0.5], [0.4, 0.2, 1.1]]) {
+      const p = new THREE.Vector3(u + du, h, v + dv).applyMatrix4(m);
+      const want = planToWorld(b, u + du, v + dv, h, apt.floor, apt.mirrored);
+      expect(p.distanceTo(new THREE.Vector3(want.x, want.y, want.z)), apt.id).toBeLessThan(1e-9);
+    }
+  }
 });

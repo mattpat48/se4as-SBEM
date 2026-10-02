@@ -100,7 +100,7 @@ function useEmissive(color: string) {
   return material;
 }
 
-/** Opening sashes and blinds on the windows of one apartment (solid floors). */
+/** Opening sashes and blinds on the windows of one apartment (solid floors and the 3D cut floor). */
 export function WindowActuators({ b, apt, immersive = false }: { b: BuildingGeom; apt: ApartmentGeom; immersive?: boolean }) {
   const sashes = useRef<(THREE.Group | null)[]>([]);
   const blinds = useRef<(THREE.Mesh | null)[]>([]);
