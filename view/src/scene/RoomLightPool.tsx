@@ -8,12 +8,14 @@ import { lightLevel } from '../domain/actuatorVisual';
 import { ROOM_LIGHTS } from '../domain/deviceAppearance';
 import { planToWorld, type ComplexLayout } from '../domain/layout';
 import { useLiveStore } from '../store/live';
+import { useUiStore } from '../store/ui';
 import { useWalkStore } from '../store/walk';
 import { approach } from './anim';
 
 const POOL = 6;
 
 export function RoomLightPool({ layout }: { layout: ComplexLayout }) {
+  const low = useUiStore((s) => s.lowPerformance);
   const lights = useRef<(THREE.PointLight | null)[]>([]);
   const level = useRef(0);
   const placed = useRef<string | null>(null);
@@ -23,17 +25,17 @@ export function RoomLightPool({ layout }: { layout: ComplexLayout }) {
     const b = layout.buildings.find((x) => x.id === apt?.building);
     const state = apt ? useLiveStore.getState().states.get(`${apt.id}.lights`)?.state ?? {} : {};
     level.current = approach(level.current, apt ? lightLevel(state) : 0, dt);
-    if (apt && b && placed.current !== apt.id) {
-      placed.current = apt.id;
+    if (apt && b && placed.current !== `${apt.id}:${low}`) {
+      placed.current = `${apt.id}:${low}`;
       lights.current.forEach((l, i) => {
-        const r = ROOM_LIGHTS[i % ROOM_LIGHTS.length];
+        const r = ROOM_LIGHTS[(low ? i * 2 : i) % ROOM_LIGHTS.length];
         const p = planToWorld(b, r.u + Math.sin(r.rotationY) * 0.3, r.v + Math.cos(r.rotationY) * 0.3, r.h, apt.floor, apt.mirrored);
         l?.position.set(p.x, p.y, p.z);
       });
     }
     for (const l of lights.current) if (l) l.intensity = 16 * level.current;
   });
-  return <>{Array.from({ length: POOL }, (_, i) => (
+  return <>{Array.from({ length: low ? 3 : POOL }, (_, i) => (
     <pointLight key={i} ref={(l) => { lights.current[i] = l; }} intensity={0} distance={8} decay={2} color="#ffe5b6" />
   ))}</>;
 }

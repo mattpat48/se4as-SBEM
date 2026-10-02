@@ -24,7 +24,10 @@ export function labelOccluded(ray: THREE.Raycaster, eye: THREE.Vector3, anchor: 
   ray.set(eye, dir.divideScalar(distance));
   ray.near = 0;
   ray.far = distance - ANCHOR_MARGIN_M;
-  return ray.intersectObjects(occluders, true).some((h) => isOccluder(h.object));
+  // Reject invisible/instanced/glazed objects before raycasting, not after expensive hits.
+  const opaque: THREE.Object3D[] = [];
+  for (const root of occluders) root.traverse((o) => { if (isOccluder(o)) opaque.push(o); });
+  return ray.intersectObjects(opaque, false).length > 0;
 }
 
 const ORTHO_BACK_M = 400;

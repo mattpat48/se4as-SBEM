@@ -8,6 +8,8 @@ import type { ComplexLayout } from '../domain/layout';
 import { atmosphere } from './atmosphere';
 import { UNIT_BOX, fixedMat, mat } from './materials';
 import { ModelBoundary } from './ModelBoundary';
+import { useUiStore } from '../store/ui';
+import { MergedBoxes, type BoxTransform } from './MergedBoxes';
 
 const stone = () => fixedMat('gardenLimestone',()=>new THREE.MeshStandardMaterial({color:'#d4c7ad',roughness:.95}));
 const timber = () => fixedMat('gardenTimber',()=>new THREE.MeshStandardMaterial({color:'#927555',roughness:.86}));
@@ -15,6 +17,7 @@ const metal = () => fixedMat('gardenIron',()=>new THREE.MeshStandardMaterial({co
 const shrub = () => fixedMat('gardenShrub',()=>new THREE.MeshStandardMaterial({color:'#60744b',roughness:1}));
 const FLOWER = new THREE.IcosahedronGeometry(.13,1);
 const BUSH = new THREE.IcosahedronGeometry(1,2);
+const LOW_BUSH = new THREE.IcosahedronGeometry(1,1);
 
 function Turf({layout}:{layout:ComplexLayout}) {
   const geometry=useMemo(()=>{
@@ -60,28 +63,45 @@ function Walkways({layout}:{layout:ComplexLayout}) {
 function LibraryModel({name,positions,width,layout}:{name:'bench'|'trashcan';positions:GardenSeat[];width:number;layout:ComplexLayout}) {
   const {scene}=useGLTF(`/models/garden/${name}.glb`);
   const models=useMemo(()=>{
-    const b=new THREE.Box3().setFromObject(scene),size=b.getSize(new THREE.Vector3()),center=b.getCenter(new THREE.Vector3()),s=width/size.x;
-    return positions.map(()=>{
-      const group=new THREE.Group(),copy=scene.clone(true);copy.position.set(-center.x,-b.min.y,-center.z);group.add(copy);group.scale.set(s,(name==='bench'?.9:.85)/size.y,(name==='bench'?.75:.5)/size.z);
-      copy.traverse(o=>{if(o instanceof THREE.Mesh){o.castShadow=true;o.receiveShadow=true;}});return group;
+    scene.updateMatrixWorld(true);
+    const bounds=new THREE.Box3().setFromObject(scene),size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());
+    const fit=new THREE.Matrix4().makeScale(width/size.x,(name==='bench'?.9:.85)/size.y,(name==='bench'?.75:.5)/size.z)
+      .multiply(new THREE.Matrix4().makeTranslation(-center.x,-bounds.min.y,-center.z));
+    const core=gardenPlan(layout).core,models:THREE.InstancedMesh[]=[];
+    scene.traverse(o=>{
+      if(!(o instanceof THREE.Mesh))return;
+      const mesh=new THREE.InstancedMesh(o.geometry,o.material,positions.length);
+      positions.forEach((p,i)=>{
+        const y=Math.abs(p.x-core.center.x)<core.width/2&&Math.abs(p.z-core.center.z)<core.depth/2?.2:.025;
+        const matrix=new THREE.Matrix4().makeTranslation(p.x,y,p.z).multiply(new THREE.Matrix4().makeRotationY(p.angle)).multiply(fit).multiply(o.matrixWorld);
+        mesh.setMatrixAt(i,matrix);
+      });
+      mesh.computeBoundingSphere();mesh.castShadow=true;mesh.receiveShadow=true;models.push(mesh);
     });
-  },[scene,positions,width,name]);
-  const core=gardenPlan(layout).core;
-  return <>{positions.map((p,i)=><group key={i} position={[p.x,Math.abs(p.x-core.center.x)<core.width/2 && Math.abs(p.z-core.center.z)<core.depth/2 ? .2 : .025,p.z]} rotation={[0,p.angle,0]} dispose={null}><primitive object={models[i]}/></group>)}</>;
+    return models;
+  },[scene,positions,width,name,layout]);
+  useLayoutEffect(()=>()=>models.forEach(m=>m.dispose()),[models]);
+  return <group dispose={null}>{models.map(m=><primitive key={m.uuid} object={m}/>)}</group>;
 }
 
 function Pergola({p}:{p:GardenPoint}) {
+  const boxes=useMemo(()=>{
+    const out:BoxTransform[]=[];
+    for(const x of [-1,1])for(const z of [-1,1])out.push({position:[x*3,1.5,z*2.3],scale:[.18,3,.18]});
+    for(const z of [-1,1])out.push({position:[0,3,z*2.3],scale:[7,.22,.2]});
+    for(let i=0;i<14;i++)out.push({position:[-3.3+i*.5,3.18,0],scale:[.15,.2,5.6]});
+    out.push({position:[0,.8,0],scale:[2,.15,1]});
+    for(const z of [-1,1])out.push({position:[0,.48,z*1.1],scale:[2.8,.13,.45]});
+    return out;
+  },[]);
   return <group position={[p.x,0,p.z]}>
     <mesh geometry={UNIT_BOX} position={[0,.09,0]} scale={[8,.18,6.5]} material={stone()} receiveShadow/>
-    {[-1,1].flatMap(x=>[-1,1].map(z=><mesh key={`${x}:${z}`} geometry={UNIT_BOX} position={[x*3,1.5,z*2.3]} scale={[.18,3,.18]} material={timber()} castShadow/>))}
-    {[-1,1].map(z=><mesh key={z} geometry={UNIT_BOX} position={[0,3,z*2.3]} scale={[7,.22,.2]} material={timber()} castShadow/>)}
-    {Array.from({length:14},(_,i)=><mesh key={i} geometry={UNIT_BOX} position={[-3.3+i*.5,3.18,0]} scale={[.15,.2,5.6]} material={timber()} castShadow/>)}
-    <mesh geometry={UNIT_BOX} position={[0,.8,0]} scale={[2,.15,1]} material={timber()} castShadow/>
-    {[-1,1].map(z=><mesh key={z} geometry={UNIT_BOX} position={[0,.48,z*1.1]} scale={[2.8,.13,.45]} material={timber()} castShadow/>)}
+    <MergedBoxes boxes={boxes} material={timber()} castShadow/>
   </group>;
 }
 
 function Planting({layout}:{layout:ComplexLayout}) {
+  const low = useUiStore((s) => s.lowPerformance);
   const bushes=useRef<THREE.InstancedMesh>(null),flowers=useRef<THREE.InstancedMesh>(null);
   const data=useMemo(()=>{
     const hedge:THREE.Matrix4[]=[],bloom:THREE.Matrix4[]=[];
@@ -99,7 +119,7 @@ function Planting({layout}:{layout:ComplexLayout}) {
   },[layout]);
   useLayoutEffect(()=>{data.hedge.forEach((m,i)=>bushes.current!.setMatrixAt(i,m));data.bloom.forEach((m,i)=>{flowers.current!.setMatrixAt(i,m);flowers.current!.setColorAt(i,new THREE.Color(['#c39ab3','#e1d3b0','#a398ca'][i%3]));});for(const r of [bushes,flowers]){r.current!.instanceMatrix.needsUpdate=true;r.current!.computeBoundingSphere();}},[data]);
   return <>
-    <instancedMesh ref={bushes} args={[BUSH,shrub(),data.hedge.length]} castShadow receiveShadow/>
+    <instancedMesh ref={bushes} args={[low ? LOW_BUSH : BUSH,shrub(),data.hedge.length]} castShadow receiveShadow/>
     <instancedMesh ref={flowers} args={[FLOWER,mat('path'),data.bloom.length]}/>
   </>;
 }

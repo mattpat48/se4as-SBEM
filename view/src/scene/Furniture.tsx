@@ -17,7 +17,6 @@ import { mat } from './materials';
 import { apartmentMatrix, fitItem } from './modelFit';
 
 const URLS = FURNITURE_MODEL_FILES.map(furnitureModelUrl);
-useGLTF.preload(URLS, false);   // same key as the useGLTF(URLS) call below
 
 const BOILER = 'boiler';
 
@@ -40,7 +39,7 @@ function useModelParts(): { parts: Map<string, ModelPart[]>; bounds: Map<string,
   const gltfs = useGLTF(URLS, false);
   const boiler = useMemo(boilerGeometry, []);
   useLayoutEffect(() => () => boiler.dispose(), [boiler]);
-  return useMemo(() => {
+  const data = useMemo(() => {
     const parts = new Map<string, ModelPart[]>();
     const bounds = new Map<string, THREE.Box3>();
     const materials = new Set<THREE.MeshStandardMaterial>();
@@ -48,17 +47,31 @@ function useModelParts(): { parts: Map<string, ModelPart[]>; bounds: Map<string,
       const scene = gltfs[i].scene;
       scene.updateMatrixWorld(true);
       const list: ModelPart[] = [];
+      const byMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
       scene.traverse((o) => {
         if (!(o instanceof THREE.Mesh)) return;
-        list.push({ geometry: o.geometry, material: o.material as THREE.Material, local: o.matrixWorld.clone() });
+        const material = o.material as THREE.Material;
+        const geometries = byMaterial.get(material) ?? [];
+        geometries.push(o.geometry.clone().applyMatrix4(o.matrixWorld));
+        byMaterial.set(material, geometries);
         if (o.material instanceof THREE.MeshStandardMaterial) materials.add(o.material);
       });
+      for (const [material, geometries] of byMaterial) {
+        const merged = mergeGeometries(geometries);
+        if (!merged) throw new Error(`Cannot merge furniture ${model}`);
+        geometries.forEach(g => g.dispose());
+        list.push({ geometry: merged, material, local: new THREE.Matrix4() });
+      }
       parts.set(model, list);
       bounds.set(model, new THREE.Box3().setFromObject(scene));
     });
     parts.set(BOILER, [{ geometry: boiler, material: mat('furniture'), local: new THREE.Matrix4() }]);
     return { parts, bounds, materials };
   }, [gltfs, boiler]);
+  useLayoutEffect(() => () => {
+    for (const [model, list] of data.parts) if (model !== BOILER) list.forEach(part => part.geometry.dispose());
+  }, [data]);
+  return data;
 }
 
 /** Model placements of one apartment in the plan frame (x = u, z = v). */
@@ -104,9 +117,21 @@ export function Furniture({ layout }: { layout: ComplexLayout }) {
       for (const p of placements) {
         const world = apartmentMatrix(b, apt, p.u, p.v).multiply(p.matrix);
         parts.get(p.model)!.forEach((part, i) => {
-          const key = `${p.model}:${i}:${faded}`;
-          const g = groups.get(key) ?? { part, faded, matrices: [] };
-          g.matrices.push(world.clone().multiply(part.local));
+          const key = `${p.model}:${i}:${faded}:${apt.mirrored}`;
+          let g = groups.get(key);
+          if (!g) {
+            let geometry = part.geometry;
+            if (apt.mirrored) {
+              geometry = part.geometry.clone().scale(-1, 1, 1);
+              const indices = geometry.index ? Array.from(geometry.index.array) : Array.from({ length: geometry.attributes.position.count }, (_, j) => j);
+              for (let j = 0; j < indices.length; j += 3) [indices[j], indices[j + 2]] = [indices[j + 2], indices[j]];
+              geometry.setIndex(indices);
+            }
+            g = { part: { ...part, geometry }, faded, matrices: [] };
+          }
+          const matrix = world.clone().multiply(part.local);
+          if (apt.mirrored) matrix.multiply(new THREE.Matrix4().makeScale(-1, 1, 1));
+          g.matrices.push(matrix);
           groups.set(key, g);
         });
       }
@@ -118,11 +143,11 @@ export function Furniture({ layout }: { layout: ComplexLayout }) {
       mesh.castShadow = !faded;
       mesh.receiveShadow = true;
       mesh.raycast = ignorePick;
-      mesh.userData = { original: part.material, faded };
+      mesh.userData = { original: part.material, faded, ownedGeometry: ![...parts.values()].some((list) => list.some((p) => p.geometry === part.geometry)) };
       return mesh;
     });
   }, [furnished, parts, bounds]);
-  useLayoutEffect(() => () => meshes.forEach((m) => m.dispose()), [meshes]);
+  useLayoutEffect(() => () => meshes.forEach((m) => { if (m.userData.ownedGeometry) m.geometry.dispose(); m.dispose(); }), [meshes]);
 
   // "Plastico" (data mode) and faded buildings: one neutral material, colour stays on the data.
   useLayoutEffect(() => {

@@ -13,6 +13,8 @@ interface UiState {
   heatQuantity: HeatQuantity;
   heatOn: boolean;
   dataMode: boolean;
+  lowPerformance: boolean;
+  toggleLowPerformance(): void;
   debugOpen: boolean;
   debugTab: 'commands' | 'clock';
   setMode(mode: '3d' | '2d'): void;
@@ -39,6 +41,12 @@ export const useUiStore = create<UiState>()((set) => ({
   heatQuantity: 'temperature',
   heatOn: true,
   dataMode: false,
+  lowPerformance: (() => { try { return typeof window !== 'undefined' && window.localStorage.getItem('view.lowPerformance') === 'true'; } catch { return false; } })(),
+  toggleLowPerformance: () => set((s) => {
+    const lowPerformance = !s.lowPerformance;
+    try { if (typeof window !== 'undefined') window.localStorage.setItem('view.lowPerformance', String(lowPerformance)); } catch { /* storage may be disabled */ }
+    return { lowPerformance };
+  }),
   debugOpen: false,
   debugTab: 'commands',
   setMode: (mode) => set({ mode }),

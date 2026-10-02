@@ -1,7 +1,8 @@
 // Rain from the park's rain_level (view spec §7.7): up to 3000 instanced streaks over 200 m.
 // Clouds dim the sun in Lighting; wind sways the trees and spins the anemometer in Park.
 import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
+import { useUiStore } from '../store/ui';
 import * as THREE from 'three';
 import { rainDensity } from '../domain/effects';
 import { mulberry32 } from '../domain/random';
@@ -21,11 +22,12 @@ export function Weather() {
   }, []);
   const material = useMemo(() => new THREE.MeshBasicMaterial({ color: '#cbd5e1', transparent: true, opacity: 0.55, depthWrite: false }), []);
   const m = useMemo(() => new THREE.Matrix4(), []);
+  useLayoutEffect(() => () => material.dispose(), [material]);
 
   useFrame(({ clock }) => {
     const w = mesh.current;
     if (!w) return;
-    const count = Math.round(rainDensity(readingNow('park.rain_level')) * MAX_DROPS);
+    const count = Math.round(rainDensity(readingNow('park.rain_level')) * (useUiStore.getState().lowPerformance ? 1000 : MAX_DROPS));
     w.count = count;
     if (count === 0) return;
     const fall = clock.elapsedTime * FALL_M_S;

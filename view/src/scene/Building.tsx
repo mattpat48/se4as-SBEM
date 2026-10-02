@@ -15,6 +15,7 @@ import { Floor } from './Floor';
 import { planBox, planLocal, planWall } from './geom';
 import { UNIT_BOX, fixedMat, mat } from './materials';
 import { registerUnit, unregisterUnit } from './registry';
+import { MergedBoxes } from './MergedBoxes';
 
 interface WindowInstance { unitId: string; matrix: THREE.Matrix4 }
 
@@ -97,7 +98,7 @@ function Windows({ b, floors, apartments, stairwellId, faded }: {
 }
 
 const pvMat = () => fixedMat('pv', () => new THREE.MeshStandardMaterial({ color: '#1e3a8a', roughness: 0.25, metalness: 0.4 }));
-const canopyMat = () => fixedMat('canopy', () => new THREE.MeshStandardMaterial({ color: '#57534e', roughness: 0.7 }));
+const canopyMat = () => fixedMat('canopy', () => new THREE.MeshStandardMaterial({ color: '#d7e6e5', roughness: 0.18, metalness: 0.25, transparent: true, opacity: .8 }));
 
 export function Roof({ b, faded }: { b: BuildingGeom; faded: boolean }) {
   const ry = PLINTH_M + b.floors * b.floorHeight;
@@ -119,9 +120,7 @@ export function Roof({ b, faded }: { b: BuildingGeom; faded: boolean }) {
       {edges.map((w, i) => (
         <mesh key={i} geometry={UNIT_BOX} material={mat('wall', faded)} {...planWall(b, w, ry, PARAPET_M, 0.25)} castShadow receiveShadow />
       ))}
-      {panels.map((p, i) => (
-        <mesh key={i} geometry={UNIT_BOX} material={pvMat()} position={p.position} rotation={[-0.35, 0, 0]} scale={[2.2, 0.08, 3.2]} castShadow />
-      ))}
+      <MergedBoxes material={pvMat()} castShadow={!faded} boxes={panels.map((p) => ({ position: p.position, rotation: [-.35, 0, 0], scale: [2.2, .08, 3.2] }))} />
       <mesh geometry={UNIT_BOX} material={mat('wall', faded)} {...planBox(b, LIFT, ry, 2.2)} castShadow receiveShadow />
     </group>
   );
@@ -141,8 +140,20 @@ export function PortoneSteps({ b, faded = false }: { b: BuildingGeom; faded?: bo
 
 /** Canopy over the park exit of the androne. */
 export function Canopy({ b }: { b: BuildingGeom }) {
-  return <mesh geometry={UNIT_BOX} material={canopyMat()}
-    {...planBox(b, { u0: ANDRONE.u0 - 0.3, u1: ANDRONE.u1 + 0.3, v0: PLAN_D, v1: PLAN_D + 1.6 }, PLINTH_M + 2.7, 0.15)} castShadow />;
+  const stone = fixedMat('entrance-stone', () => new THREE.MeshStandardMaterial({ color: '#e3d9c5', roughness: .85 }));
+  const trim = fixedMat('entrance-trim', () => new THREE.MeshStandardMaterial({ color: '#bfa77b', metalness: .65, roughness: .35 }));
+  const light = fixedMat('entrance-warm-light', () => new THREE.MeshStandardMaterial({ color: '#fff1c9', emissive: '#ffdda0', emissiveIntensity: .65 }));
+  return <group>
+    <mesh geometry={UNIT_BOX} material={canopyMat()}
+      {...planBox(b, { u0: ANDRONE.u0 - .4, u1: ANDRONE.u1 + .4, v0: PLAN_D - .12, v1: PLAN_D + 1.8 }, PLINTH_M + 2.8, .09)} receiveShadow />
+    {[12.87, 15.63].map((u) => <group key={u}>
+      <mesh geometry={UNIT_BOX} material={stone} {...planBox(b, { u0: u - .13, u1: u + .13, v0: PLAN_D - .05, v1: PLAN_D + .18 }, PLINTH_M, 2.72)} castShadow receiveShadow />
+      <mesh geometry={UNIT_BOX} material={light} {...planBox(b, { u0: u - .035, u1: u + .035, v0: PLAN_D + .185, v1: PLAN_D + .22 }, PLINTH_M + .7, 1.25)} />
+    </group>)}
+    <mesh geometry={UNIT_BOX} material={stone} {...planBox(b, { u0: 12.74, u1: 15.76, v0: PLAN_D - .05, v1: PLAN_D + .18 }, PLINTH_M + 2.52, .2)} castShadow />
+    {[PLAN_D + .25, PLAN_D + 1.65].map((v) => <mesh key={v} geometry={UNIT_BOX} material={trim}
+      {...planBox(b, { u0: ANDRONE.u0 - .4, u1: ANDRONE.u1 + .4, v0: v, v1: v + .07 }, PLINTH_M + 2.73, .07)} />)}
+  </group>;
 }
 
 export function Building({ b, apartments }: { b: BuildingGeom; apartments: ApartmentGeom[] }) {

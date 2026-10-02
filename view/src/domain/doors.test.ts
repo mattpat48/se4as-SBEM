@@ -22,12 +22,12 @@ test('every building has 7 doors per apartment and two portoni (58)', () => {
   expect(byId('A-2-1:balcony')).toMatchObject({ axis: 'u', at: 12, a0: BALCONY_DOOR.u0, a1: BALCONY_DOOR.u1, defaultOpen: false });
 });
 
-test('interno 2 doors are interno 1 rotated by 180°', () => {
+test('interno 2 doors reflect across the stairwell', () => {
   const entry = byId('A-0-2:entry');
   expect(entry).toMatchObject({ axis: 'v', at: 15.5, swing: 1 });
-  expect(entry.a0).toBeCloseTo(6.4);
-  expect(entry.a1).toBeCloseTo(7.4);
-  expect(byId('A-0-2:balcony')).toMatchObject({ at: 0, swing: 1 });
+  expect(entry.a0).toBeCloseTo(4.6);
+  expect(entry.a1).toBeCloseTo(5.6);
+  expect(byId('A-0-2:balcony')).toMatchObject({ at: 12, swing: -1 });
 });
 
 test('a closed leaf lies along the wall, an open one stands across it on the swing side', () => {
@@ -51,7 +51,7 @@ test('no open leaf hits the furniture, in both interni', () => {
       if (!mirrored) return f;
       const [u0, v0] = mirror(f.u1, f.v1);
       const [u1, v1] = mirror(f.u0, f.v0);
-      return { ...f, u0, u1, v0, v1 };
+      return { ...f, u0, u1, v0: Math.min(v0, v1), v1: Math.max(v0, v1) };
     });
     for (const leaf of doorLeaves(d, 1)) {
       for (let k = 0; k <= 20; k++) {

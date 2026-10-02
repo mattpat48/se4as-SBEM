@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { MINIMAP_EXTENT_M } from '../domain/camera';
 import type { BuildingGeom, ComplexLayout, RectGeom } from '../domain/layout';
 import { placeLabel } from '../domain/whereabouts';
+import { useUiStore } from '../store/ui';
 import { useWalkStore, walker } from '../store/walk';
 
 const SIZE_PX = 200;
@@ -23,12 +24,15 @@ export function WalkMinimap({ layout }: { layout: ComplexLayout }) {
   const open = useWalkStore((s) => s.openBuilding);
   const place = useWalkStore((s) => s.place);
   useEffect(() => {
-    let frame = 0;
-    const tick = () => {
-      arrow.current?.setAttribute('transform', `translate(${walker.x} ${walker.z}) rotate(${(-walker.yaw * 180) / Math.PI})`);
+    let frame = 0, last = -Infinity, shown = '';
+    const tick = (now: number) => {
       frame = requestAnimationFrame(tick);
+      if (document.hidden || now - last < (useUiStore.getState().lowPerformance ? 1000 / 15 : 1000 / 30)) return;
+      last = now;
+      const transform = `translate(${walker.x} ${walker.z}) rotate(${(-walker.yaw * 180) / Math.PI})`;
+      if (transform !== shown) { arrow.current?.setAttribute('transform', transform); shown = transform; }
     };
-    tick();
+    frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, []);
   return (

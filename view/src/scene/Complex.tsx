@@ -57,11 +57,12 @@ export function onPick(e: ThreeEvent<MouseEvent>) {
 
 export function Complex({ layout }: { layout: ComplexLayout }) {
   const walking = useWalkStore((s) => s.active);
+  const plan2d = useUiStore((s) => s.mode === '2d');
   const open = useWalkStore((s) => (s.active ? s.openBuilding : null));
   const byBuilding = useMemo(() => new Map(layout.buildings.map((b) => [b.id, layout.apartments.filter((a) => a.building === b.id)])), [layout]);
   return (
     <group onClick={onPick}>
-      <PiazzaDArmi />
+      <group visible={!plan2d}><PiazzaDArmi /></group>
       <mesh geometry={UNIT_BOX} material={mat('ground')} position={[0, -0.5, 0]} scale={[200, 1, 200]} receiveShadow />
       {ROADS.map(([w, d, x, z], i) => (
         <mesh key={i} geometry={UNIT_BOX} material={mat('road')} position={[x, 0.03, z]} scale={[w, 0.06, d]} receiveShadow />

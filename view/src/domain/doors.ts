@@ -1,5 +1,5 @@
 // Swinging doors of the first person (V21): scenery of the view, not MQTT devices. Plan metres of
-// the building (interno 2 already rotated by 180°), one leaf or two per doorway.
+// the building (interno 2 reflected across the stairwell), one leaf or two per doorway.
 import type { ApartmentGeom, BuildingGeom } from './layout';
 import { DOOR_OPENINGS } from './interior';
 import { BALCONY_DOOR, ENTRY_DOOR, PLAN_D, PLAN_W, type PlanRect, type PlanWindow } from './plan';
@@ -37,12 +37,9 @@ const APARTMENT_DOORS: LocalDoor[] = [
 ];
 
 function rotated(d: LocalDoor): LocalDoor {
-  const across = d.axis === 'u' ? PLAN_D : PLAN_W;
-  const along = d.axis === 'u' ? PLAN_W : PLAN_D;
-  return {
-    ...d, at: across - d.at, a0: along - d.a1, a1: along - d.a0,
-    hinge: d.hinge === 'a0' ? 'a1' : 'a0', swing: d.swing === 1 ? -1 : 1,
-  };
+  return d.axis === 'u'
+    ? { ...d, a0: PLAN_W - d.a1, a1: PLAN_W - d.a0, hinge: d.hinge === 'a0' ? 'a1' : 'a0' }
+    : { ...d, at: PLAN_W - d.at, swing: d.swing === 1 ? -1 : 1 };
 }
 
 /** All doors of a building with the typical plan; none without it. */

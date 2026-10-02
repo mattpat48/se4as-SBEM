@@ -1,9 +1,13 @@
+import { useUiStore } from '../../store/ui';
 import { useFrame } from '@react-three/fiber';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { atmosphere } from '../atmosphere';
 import { UNIT_BOX } from '../materials';
 import { SITE } from './site';
+
+// Context scenery has no selectable devices: skip thousands of pointless ray tests.
+const ignorePick = () => {};
 
 type Piece = { p: [number, number, number]; s: [number, number, number]; a?: number; tilt?: number };
 type Finish = 'asphalt' | 'paving' | 'dryGrass' | 'cream' | 'ochre' | 'brick' | 'roof' | 'glass' | 'trim' | 'wood' | 'steel' | 'white' | 'green' | 'red' | 'rubber' | 'lamp' | 'violet';
@@ -32,14 +36,28 @@ function surfaceTexture(kind: Finish) {
   return map;
 }
 
-function Batch({ pieces, material, geometry = UNIT_BOX, shadow = true }: { pieces: Piece[]; material: THREE.Material; geometry?: THREE.BufferGeometry; shadow?: boolean }) {
+function TileBatch({ pieces, material, geometry = UNIT_BOX, shadow = true }: { pieces: Piece[]; material: THREE.Material; geometry?: THREE.BufferGeometry; shadow?: boolean }) {
   const ref = useRef<THREE.InstancedMesh>(null);
   useLayoutEffect(() => {
     const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), s = new THREE.Vector3();
     pieces.forEach((v, i) => { e.set(0, v.a ?? 0, v.tilt ?? 0); m.compose(p.fromArray(v.p), q.setFromEuler(e), s.fromArray(v.s)); ref.current!.setMatrixAt(i, m); });
     ref.current!.instanceMatrix.needsUpdate = true; ref.current!.computeBoundingSphere();
   }, [pieces]);
-  return <instancedMesh ref={ref} args={[geometry, material, pieces.length]} castShadow={shadow} receiveShadow />;
+  return <instancedMesh ref={ref} args={[geometry, material, pieces.length]} castShadow={shadow} receiveShadow raycast={ignorePick} />;
+}
+
+/** Spatially bounded instances allow frustum culling during the first-person visit. */
+function Batch(props: { pieces: Piece[]; material: THREE.Material; geometry?: THREE.BufferGeometry; shadow?: boolean }) {
+  const tiles = useMemo(() => {
+    if (props.pieces.length < 1000 && props.geometry !== CROWN && props.geometry !== LOW_CROWN) return [['all', props.pieces] as const];
+    const out = new Map<string, Piece[]>();
+    for (const piece of props.pieces) {
+      const key = `${Math.floor(piece.p[0] / 160)}:${Math.floor(piece.p[2] / 160)}`;
+      const group = out.get(key) ?? []; group.push(piece); out.set(key, group);
+    }
+    return [...out.entries()];
+  }, [props.pieces, props.geometry]);
+  return <>{tiles.map(([key, pieces]) => <TileBatch key={key} {...props} pieces={pieces} />)}</>;
 }
 
 // Hipped terracotta roofs (not flat blocks): ridge, four sloping faces and projecting eaves.
@@ -51,6 +69,7 @@ HIP.setAttribute('position', new THREE.Float32BufferAttribute([
 ], 3));
 HIP.setAttribute('uv', new THREE.Float32BufferAttribute(Array.from({length: 6}, () => [0,0,1,0,.5,1]).flat(), 2)); HIP.computeVertexNormals();
 const CROWN = new THREE.IcosahedronGeometry(1, 2);
+const LOW_CROWN = new THREE.IcosahedronGeometry(1, 1);
 const TRUNK = new THREE.CylinderGeometry(.13, .2, 1, 7);
 const CONIFER = new THREE.ConeGeometry(1, 1, 10);
 
@@ -277,12 +296,13 @@ function Sign({ text, x,y,z,width,angle=Math.atan2(-x,-z),bg='#24557c' }: {text:
   const material = useMemo(()=>new THREE.MeshStandardMaterial({map:texture,roughness:.85,side:THREE.FrontSide}),[texture]);
   useLayoutEffect(()=>()=>{texture.dispose();material.dispose();},[texture,material]);
   return <group position={[x,y,z]} rotation={[0,angle,0]}>
-    <mesh position={[0,0,.012]} material={material}><planeGeometry args={[width,width/8]} /></mesh>
-    <mesh position={[0,0,-.012]} rotation={[0,Math.PI,0]} material={material}><planeGeometry args={[width,width/8]} /></mesh>
+    <mesh position={[0,0,.012]} material={material} raycast={ignorePick}><planeGeometry args={[width,width/8]} /></mesh>
+    <mesh position={[0,0,-.012]} rotation={[0,Math.PI,0]} material={material} raycast={ignorePick}><planeGeometry args={[width,width/8]} /></mesh>
   </group>;
 }
 
 export function PiazzaDArmi() {
+  const low = useUiStore((s) => s.lowPerformance);
   const data = useMemo(buildScenery, []);
   const materials = useMemo(() => Object.fromEntries(Object.entries(COLORS).map(([key,color]) => [key, new THREE.MeshStandardMaterial({color,roughness:key==='glass'?.38:.94,metalness:key==='steel'?.35:0,map:['asphalt','paving','roof','dryGrass'].includes(key)?surfaceTexture(key as Finish):null})])) as Record<Finish,THREE.MeshStandardMaterial>,[]);
   // Project grain in world metres so a 1 km ground slab never stretches its texture.
@@ -320,7 +340,7 @@ export function PiazzaDArmi() {
     <Batch pieces={data.roofs} material={materials.roof} geometry={HIP}/>
     <Batch pieces={data.pines} material={leaves[1]} geometry={CONIFER}/>
     <Batch pieces={data.trunks} material={materials.wood} geometry={TRUNK}/>
-    {data.crowns.map((pieces,i)=><Batch key={i} pieces={pieces} material={leaves[i]} geometry={CROWN}/>)}
+    {data.crowns.map((pieces,i)=><Batch key={i} pieces={pieces} material={leaves[i]} geometry={low ? LOW_CROWN : CROWN}/>)}
     {data.signs.map((s,i)=><Sign key={i} {...s}/>)}
     <HotelNeon />
     <Foothills />
@@ -335,11 +355,12 @@ function Foothills() {
     g.computeVertexNormals();return g;
   },[]);
   useLayoutEffect(()=>()=>geometry.dispose(),[geometry]);
-  return <mesh geometry={geometry} position={[0,-4,-1160]} receiveShadow><meshStandardMaterial color="#75816a" roughness={1} /></mesh>;
+  return <mesh geometry={geometry} position={[0,-4,-1160]} receiveShadow raycast={ignorePick}><meshStandardMaterial color="#75816a" roughness={1} /></mesh>;
 }
 
 
 function HotelNeon() {
+  const low = useUiStore((s) => s.lowPerformance);
   const lights=useRef<(THREE.PointLight|null)[]>([]);
   const texture=useMemo(()=>{
     const c=document.createElement('canvas');c.width=128;c.height=768;const ctx=c.getContext('2d')!;
@@ -351,9 +372,9 @@ function HotelNeon() {
   useFrame(()=>{material.emissiveIntensity=.15+atmosphere.night*2.3;lights.current.forEach(l=>{if(l)l.intensity=atmosphere.night*130;});});
   useLayoutEffect(()=>()=>{texture.dispose();material.dispose();},[texture,material]);
   return <>
-    {[-15.5,-6.8,6.8,15.5].map((z,i)=><pointLight key={i} ref={l=>{lights.current[i]=l;}} color="#b272ff" position={[SITE.hotel.x+16,12,SITE.hotel.z-z]} intensity={0} distance={22} decay={2}/>)}
+    {(low ? [-10,10] : [-15.5,-6.8,6.8,15.5]).map((z,i)=><pointLight key={i} ref={l=>{lights.current[i]=l;}} color="#b272ff" position={[SITE.hotel.x+16,12,SITE.hotel.z-z]} intensity={0} distance={22} decay={2}/>)}
     <group position={[SITE.hotel.x+4,35.5,SITE.hotel.z]} rotation={[0,Math.PI/2,0]}>
-    <mesh material={material}><planeGeometry args={[2.5,15]} /></mesh>
-    <mesh position={[0,0,-.08]} rotation={[0,Math.PI,0]} material={material}><planeGeometry args={[2.5,15]} /></mesh>
+    <mesh material={material} raycast={ignorePick}><planeGeometry args={[2.5,15]} /></mesh>
+    <mesh position={[0,0,-.08]} rotation={[0,Math.PI,0]} material={material} raycast={ignorePick}><planeGeometry args={[2.5,15]} /></mesh>
   </group></>;
 }

@@ -16,7 +16,7 @@ import type { SensorType } from '../domain/messages';
 import { useLiveStore } from '../store/live';
 import { useModelStore } from '../store/model';
 import { useUiStore } from '../store/ui';
-import { facadePoints, labelEye, labelOccluded } from './labelOcclusion';
+import { facadePoints, isOccluder, labelEye, labelOccluded } from './labelOcclusion';
 import { getUnit } from './registry';
 
 const REFRESH_S = 0.25;
@@ -136,7 +136,7 @@ export function Labels({ layout }: { layout: ComplexLayout }) {
     }
     // Buildings are the only occluders: scenery, furniture and people never hide a label.
     const occluders: THREE.Object3D[] = [];
-    scene.traverse((o) => { if (o.userData.buildingId) occluders.push(o); });
+    scene.traverse((o) => { if (o.userData.buildingId) o.traverse((part) => { if (isOccluder(part)) occluders.push(part); }); });
     const inSight = (p: THREE.Vector3) => !labelOccluded(sight.ray, labelEye(camera, p, sight.eye), p, occluders);
     const visible = (it: LabelItem) => {
       if (it.kind === 'hazard') return true;

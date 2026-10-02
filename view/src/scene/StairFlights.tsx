@@ -6,6 +6,7 @@ import { PLINTH_M } from '../domain/plan';
 import { DOWN_HALF, FLIGHT_STEPS, STAIR_DIVIDER, UP_HALF, stairSteps } from '../domain/stairs';
 import { planBox } from './geom';
 import { UNIT_BOX, mat } from './materials';
+import { MergedBoxes } from './MergedBoxes';
 
 const TREAD_THICK_M = 0.3;
 
@@ -15,10 +16,10 @@ export function StairFlights({ b, floor, faded = false }: { b: BuildingGeom; flo
   const landingTop = steps[FLIGHT_STEPS].top;
   return (
     <group>
-      {steps.map((s, i) => {
-        const bottom = i < FLIGHT_STEPS ? 0 : Math.max(0, s.top - (i === FLIGHT_STEPS ? 0.2 : TREAD_THICK_M));
-        return <mesh key={i} geometry={UNIT_BOX} material={mat('slab', faded)} {...planBox(b, s, y0 + bottom, s.top - bottom)} castShadow receiveShadow />;
-      })}
+      <MergedBoxes material={mat('slab', faded)} castShadow={!faded} boxes={steps.map((s, i) => {
+        const bottom = i < FLIGHT_STEPS ? 0 : Math.max(0, s.top - (i === FLIGHT_STEPS ? .2 : TREAD_THICK_M));
+        return planBox(b, s, y0 + bottom, s.top - bottom);
+      })} />
       {floor === 0 && <mesh geometry={UNIT_BOX} material={mat('wall', faded)} {...planBox(b, DOWN_HALF, y0, landingTop)} castShadow receiveShadow />}
       <mesh geometry={UNIT_BOX} material={mat('wall', faded)} {...planBox(b, STAIR_DIVIDER, y0, b.floorHeight)} castShadow receiveShadow />
     </group>

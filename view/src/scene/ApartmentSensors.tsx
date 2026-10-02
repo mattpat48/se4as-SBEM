@@ -111,7 +111,7 @@ export function buildSensorBatches(layout: ComplexLayout, floor: number | null, 
       const pose = apartmentDevicePose(d.type, realHeights);
       if (!pose) continue;
       const p = planToWorld(b, pose.u, pose.v, pose.h, apt.floor, apt.mirrored);
-      const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), b.rotationY + pose.rotationY + (apt.mirrored ? Math.PI : 0));
+      const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), b.rotationY + (apt.mirrored ? -1 : 1) * pose.rotationY);
       const matrix = new THREE.Matrix4().compose(new THREE.Vector3(p.x, p.y, p.z), q, new THREE.Vector3(1, 1, 1));
       out.set(d.type, [...(out.get(d.type) ?? []), { id: d.deviceId, matrix }]);
     }

@@ -34,12 +34,12 @@ test('side 1 of every building faces the park', () => {
   expect(planToWorld(B('D'), 13, 12, 0, 0, false).x).toBeCloseTo(-44);
 });
 
-test('interno 2 is interno 1 rotated by 180°', () => {
+test('interno 2 reflects across the stairwell', () => {
   expect(L.apartments.length).toBe(32);
   expect(L.apartments.find((a) => a.id === 'A-2-2')!.mirrored).toBe(true);
   expect(L.apartments.find((a) => a.id === 'A-2-1')!.mirrored).toBe(false);
   const a = planToWorld(B('A'), 2, 9, 1, 2, true);
-  const b = planToWorld(B('A'), 24, 3, 1, 2, false);
+  const b = planToWorld(B('A'), 24, 9, 1, 2, false);
   expect(a.x).toBeCloseTo(b.x); expect(a.z).toBeCloseTo(b.z); expect(a.y).toBeCloseTo(0.6 + 2 * 3.2 + 1);
 });
 
@@ -139,4 +139,15 @@ test('three apartments per floor falls back to blocks', () => {
   expect(l.warnings).toContain('A: pianta tipo non applicabile, uso blocchi');
   expect(l.devices.get('A-0-1.temperature')!.position).toBeNull();
   expect(l.devices.get('B-0-1.temperature')!.position).not.toBeNull();
+});
+
+test('both apartments of every building have their balconies facing the central park', () => {
+  for (const b of L.buildings) {
+    for (const mirrored of [false, true]) {
+      const inside = planToWorld(b, 3.3, 6, 0, 0, mirrored);
+      const balcony = planToWorld(b, 3.3, 12.75, 0, 0, mirrored);
+      const facingPark = (balcony.x - inside.x) * -b.center.x + (balcony.z - inside.z) * -b.center.z;
+      expect(facingPark, `${b.id} interno ${mirrored ? 2 : 1}`).toBeGreaterThan(0);
+    }
+  }
 });

@@ -45,13 +45,13 @@ export function fitItem(pieces: readonly ModelPiece[], boundsOf: (model: string)
 
 /**
  * Plan frame → world for one apartment. Positions follow the building's plan scale while the
- * models keep their own proportions; interno 2 is interno 1 turned by 180°.
+ * models keep their own proportions; interno 2 is reflected across the central stairwell.
  */
 export function apartmentMatrix(b: BuildingGeom, apt: ApartmentGeom, u: number, v: number): THREE.Matrix4 {
   const [x, z] = planLocal(b, u, v, apt.mirrored);
   return new THREE.Matrix4().makeTranslation(b.center.x, 0, b.center.z)
     .multiply(new THREE.Matrix4().makeRotationY(b.rotationY))
     .multiply(new THREE.Matrix4().makeTranslation(x, PLINTH_M + apt.floor * b.floorHeight, z))
-    .multiply(new THREE.Matrix4().makeRotationY(apt.mirrored ? Math.PI : 0))
+    .multiply(new THREE.Matrix4().makeScale(apt.mirrored ? -1 : 1, 1, 1))
     .multiply(new THREE.Matrix4().makeTranslation(-u, 0, -v));
 }

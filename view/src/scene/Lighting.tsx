@@ -37,10 +37,15 @@ export function Lighting() {
   const hemi = useRef<THREE.HemisphereLight>(null);
   const { scene, gl } = useThree();
   const inside = useWalkStore((s) => s.active);
+  const low = useUiStore((s) => s.lowPerformance);
+  const elapsed = useRef(1);
   const focus = useMemo(() => ({ x: 0, y: 0, z: 0 }), []);
   const tmp = useMemo(() => ({ dir: new THREE.Vector3(), sky: new THREE.Color() }), []);
 
-  useFrame(() => {
+  useFrame((_, dt) => {
+    elapsed.current += dt;
+    if (elapsed.current < .1) return;
+    elapsed.current = 0;
     const s = currentSun();
     const n = nightFactor(s.elevationDeg);
     const dataMode = useUiStore.getState().dataMode;
@@ -101,7 +106,8 @@ export function Lighting() {
         intensity={DAY.sunIntensity}
         position={[-70, 110, 60]}
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        key={low ? 'sun-low' : 'sun-normal'}
+        shadow-mapSize={low ? [1024, 1024] : [1536, 1536]}
         shadow-camera-left={-110}
         shadow-camera-right={110}
         shadow-camera-top={110}

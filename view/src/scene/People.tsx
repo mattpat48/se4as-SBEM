@@ -24,7 +24,6 @@ const MAX_PEOPLE = 80;
 const REFRESH_S = 0.5;
 const CORE_SLAB_M = 0.1;
 const URLS = RESIDENT_MODELS.map(residentModelUrl);
-useGLTF.preload(URLS, false);   // same key as the useGLTF(URLS) call below
 
 interface Resident { root: THREE.Group; mixer: THREE.AnimationMixer }
 interface Wanted { key: string; where: 'home' | 'stairs'; x: number; y: number; z: number; yaw: number }
@@ -89,7 +88,7 @@ export function People({ layout }: { layout: ComplexLayout }) {
       out.push({
         key, where, x: b.center.x + lx * c + lz * s, z: b.center.z - lx * s + lz * c,
         y: PLINTH_M + f * b.floorHeight + (where === 'stairs' ? Math.max(stairTread(u, v, b.floorHeight), CORE_SLAB_M) : SLAB_M),
-        yaw: b.rotationY + (mirrored ? Math.PI : 0) + residentYaw(key, where),
+        yaw: b.rotationY + (mirrored ? -1 : 1) * residentYaw(key, where),
       });
     };
     for (const a of layout.apartments) {

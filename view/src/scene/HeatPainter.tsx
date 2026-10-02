@@ -2,7 +2,7 @@
 // wooden cut slabs (V20) by day, emissive shells by night, grey (striped when stale) without fresh data, and the
 // red hazard pulse regardless of the heat map.
 import { useFrame } from '@react-three/fiber';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { lightLevel } from '../domain/actuatorVisual';
 import { isFire } from '../domain/effects';
@@ -96,7 +96,11 @@ export function HeatPainter({ layout }: { layout: ComplexLayout }) {
     warm: new THREE.Color(WARM_LIGHT), glow: new THREE.Color(), fire: new THREE.Color('#fb923c'),
   }), []);
 
-  useFrame(({ clock }) => {
+  const elapsed = useRef(1);
+  useFrame(({ clock }, dt) => {
+    elapsed.current += dt;
+    if (elapsed.current < .05) return;
+    elapsed.current = 0;
     const ui = useUiStore.getState();
     const live = useLiveStore.getState();
     const now = Date.now();

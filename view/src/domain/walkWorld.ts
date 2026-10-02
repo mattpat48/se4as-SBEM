@@ -51,7 +51,7 @@ function segRect([u0, v0, u1, v1]: Seg, half: number): PlanRect {
 function rotated(r: PlanRect): PlanRect {
   const [u0, v0] = mirror(r.u1, r.v1);
   const [u1, v1] = mirror(r.u0, r.v0);
-  return { u0, u1, v0, v1 };
+  return { u0: Math.min(u0, u1), u1: Math.max(u0, u1), v0: Math.min(v0, v1), v1: Math.max(v0, v1) };
 }
 const bothInterni = (r: PlanRect): PlanRect[] => [r, rotated(r)];
 
@@ -111,7 +111,6 @@ export function buildWalkWorld(layout: ComplexLayout, openBuildingId: string | n
     ...layout.chargers.map((c) => pole(c.position, 0.3)),
     ...layout.parkFixtures.lamps.map((p) => pole(p, 0.12)),
     pole(layout.parkFixtures.station, 0.1),
-    ...layout.parkFixtures.signs.map((p) => pole(p, 0.06)),
   ];
   const garden = gardenPlan(layout);
   const { center, width, depth } = garden.core;

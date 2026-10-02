@@ -1,6 +1,6 @@
 // Typical floor plan (view spec §7.2), in plan metres: u along the long side (0…26),
 // v in depth (0 = side 2, 12 = side 1). All values are for interno 1; interno 2 is
-// the same plan rotated by 180° (see `mirror`).
+// the same plan reflected across the stairwell, with both balconies facing the park (see `mirror`).
 
 export const PLAN_W = 26;
 export const PLAN_D = 12;
@@ -60,5 +60,5 @@ export const ENTRY_DOOR = { u: 10.5, v0: 4.6, v1: 5.6 };
 export const BALCONY_DOOR = { u0: 3.2, u1: 4.1 };
 
 export function mirror(u: number, v: number): [number, number] {
-  return [PLAN_W - u, PLAN_D - v];
+  return [PLAN_W - u, v];
 }

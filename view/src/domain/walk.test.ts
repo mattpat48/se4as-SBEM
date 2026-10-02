@@ -105,7 +105,7 @@ test('on foot from A-2-1 to B-1-2: stairs, androne, park, the other portone, sta
   corner(1.25, -35); corner(38, -35); corner(38, 1.25);
   route(B, [[13.6, 13.6]]);
   world = buildWalkWorld(layout, 'B');   // opening the park portone opens B
-  route(B, [[13.6, 11.5], [14, 4.8], [14, 1.2], [12, 1.2], [12, 4.9], [14.5, 6.9], [16.5, 6.9]]);
+  route(B, [[13.6, 11.5], [14, 4.8], [14, 1.2], [12, 1.2], [12, 4.9], [14.5, 5.1], [16.5, 5.1]]);
   expect(locate(layout, 'B', w)).toMatchObject({ kind: 'apartment', unitId: 'B-1-2' });
   expect(w.feet).toBeCloseTo(floorY(1, 0.12));
 });

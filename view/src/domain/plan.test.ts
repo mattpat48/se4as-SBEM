@@ -1,7 +1,7 @@
 import { CORE, INTERIOR_WALLS, PLAN_D, PLAN_W, ROOMS, WINDOWS, mirror } from './plan';
 
-test('mirror rotates 180° about the plan centre', () => {
-  expect(mirror(0, 0)).toEqual([26, 12]);
+test('mirror preserves the park-facing side', () => {
+  expect(mirror(0, 0)).toEqual([26, 0]);
   expect(mirror(13, 6)).toEqual([13, 6]);
 });
 

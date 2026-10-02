@@ -40,8 +40,8 @@ test('the open building has floors, a stair well without a floor, and closable d
   const feet = 0.6 + 2 * 3.2 + 0.12;
   expect(blockedAt(world, doorway.x, doorway.z, feet, 0.18, closedEnv)).toBe(true);
   expect(blockedAt(world, doorway.x, doorway.z, feet, 0.18, openEnv)).toBe(false);
-  // The interno-2 entry door on the landing, rotated by 180°.
-  const entry2 = at(15.5, 6.9, 2);
+  // The interno-2 entry door on the landing, reflected across the stairwell.
+  const entry2 = at(15.5, 5.1, 2);
   expect(blockedAt(world, entry2.x, entry2.z, feet, 0.18, closedEnv)).toBe(true);
   expect(blockedAt(world, entry2.x, entry2.z, feet, 0.18, openEnv)).toBe(false);
 });

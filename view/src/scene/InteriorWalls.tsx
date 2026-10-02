@@ -35,8 +35,7 @@ export function InteriorWalls({ b, apt, ceiling, entryOpen = false, faded = fals
   const geometries = wallGeometries(ceiling, entryOpen);
   const [x, z] = planLocal(b, 0, 0, apt.mirrored);
   return (
-    <group position={[x, PLINTH_M + apt.floor * b.floorHeight, z]} rotation={[0, apt.mirrored ? Math.PI : 0, 0]}
-      scale={[b.width / PLAN_W, 1, b.depth / PLAN_D]}>
+    <group position={[x, PLINTH_M + apt.floor * b.floorHeight, z]} scale={[(apt.mirrored ? -1 : 1) * b.width / PLAN_W, 1, b.depth / PLAN_D]}>
       {geometries.map(({ role, g }) => (
         <mesh key={role} geometry={g} material={mat(role, faded)} dispose={null} castShadow receiveShadow />
       ))}

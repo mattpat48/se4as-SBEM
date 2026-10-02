@@ -69,6 +69,7 @@ export function TopBar() {
   const heatQuantity = useUiStore((s) => s.heatQuantity);
   const heatOn = useUiStore((s) => s.heatOn);
   const dataMode = useUiStore((s) => s.dataMode);
+  const lowPerformance = useUiStore((s) => s.lowPerformance);
   const inside = useWalkStore((s) => s.active);
   const selectedUnit = useUiStore((s) => s.selectedUnit);
   const entry = layout ? chooseWalkApartment(layout, selectedUnit, building, floor) : null;
@@ -84,6 +85,10 @@ export function TopBar() {
         <button className={mode === '3d' && !inside ? 'is-on' : ''} onClick={() => { useWalkStore.getState().exit(); ui.setMode('3d'); }} title="3 = vista 3D">3D</button>
         <button className={mode === '2d' ? 'is-on' : ''} onClick={() => { useWalkStore.getState().exit(); ui.setMode('2d'); }} title="2 = planimetria 2D">2D</button>
       </div>
+      <button className={`switch performance-toggle ${lowPerformance ? 'is-on' : ''}`} role="switch" aria-checked={lowPerformance}
+        onClick={() => ui.toggleLowPerformance()} title="Riduce il carico grafico per computer meno potenti; dati e controlli restano attivi">
+        Prestazioni basse
+      </button>
       <button className={`walk-enter ${inside ? 'is-on' : ''}`} disabled={!inside && !entry} onClick={() => { if (inside) useWalkStore.getState().exit(); else if (entry && layout) useWalkStore.getState().start(layout, entry.id); }}>{inside ? 'Esci dalla casa' : 'Entra in casa'}</button>
       <button disabled={!layout || inside || mode !== '3d'} onClick={() => { ui.setBuilding(null); ui.setFloor(null); cameraApi.controls?.setLookAt(...LOCATION_CAMERA.position, ...LOCATION_CAMERA.target, true); }} title="Panoramica del resort e dei dintorni di Piazza d’Armi">Piazza d’Armi</button>
       <label className="topbar__field">Palazzo
@@ -109,6 +114,7 @@ export function TopBar() {
       <button className={`switch ${dataMode ? 'is-on' : ''}`} role="switch" aria-checked={dataMode} onClick={() => ui.toggleDataMode()} title="M = modalità dati">
         Modalità dati
       </button>
+
       <ScenarioChips />
       <StatusDots />
     </header>

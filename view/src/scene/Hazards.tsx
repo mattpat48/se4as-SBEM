@@ -3,7 +3,8 @@
 // The red pulse stays in HeatPainter; siren flashers are in Devices.
 import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { UNIT_BOX } from './materials';
 import * as THREE from 'three';
 import { coWarning, gasHaze, isFire, smokeDensity } from '../domain/effects';
 import { planToWorld, type ComplexLayout, type Vec3 } from '../domain/layout';
@@ -65,7 +66,7 @@ export function Hazards({ layout }: { layout: ComplexLayout }) {
   const texture = useMemo(puffTexture, []);
   const pool = useMemo(() => ({
     pos: new Float32Array(MAX_PARTICLES * 3), vel: new Float32Array(MAX_PARTICLES * 3),
-    age: new Float32Array(MAX_PARTICLES).fill(LIFE_S), next: 0, debt: new Map<string, number>(),
+    age: new Float32Array(MAX_PARTICLES).fill(LIFE_S), next: 0, active: 0, debt: new Map<string, number>(),
   }), []);
   const bucketGeoms = useMemo(() => BUCKETS.map(() => {
     const g = new THREE.BufferGeometry();
@@ -103,25 +104,29 @@ export function Hazards({ layout }: { layout: ComplexLayout }) {
         pool.next = (pool.next + 1) % MAX_PARTICLES;
         pool.pos.set([src.p.x + (Math.random() - 0.5), src.p.y + Math.random() * 0.5, src.p.z + (Math.random() - 0.5)], i * 3);
         pool.vel.set([src.out.x * 0.8 + (Math.random() - 0.5) * 0.4, 1.2 + Math.random() * 0.6, src.out.z * 0.8 + (Math.random() - 0.5) * 0.4], i * 3);
+        if (pool.age[i] >= LIFE_S) pool.active++;
         pool.age[i] = 0;
       }
       pool.debt.set(s.unitId, debt);
     }
     const counts = BUCKETS.map(() => 0);
     const arrays = bucketGeoms.map((g) => g.getAttribute('position').array as Float32Array);
-    for (let i = 0; i < MAX_PARTICLES; i++) {
+    let active = 0;
+    for (let i = 0; pool.active > 0 && i < MAX_PARTICLES; i++) {
       if (pool.age[i] >= LIFE_S) continue;
       pool.age[i] += step;
       for (let k = 0; k < 3; k++) pool.pos[i * 3 + k] += pool.vel[i * 3 + k] * step;
       const b = BUCKETS.findIndex((bk) => pool.age[i] < bk.until);
       if (b < 0) continue;
+      active++;
       arrays[b].set(pool.pos.subarray(i * 3, i * 3 + 3), counts[b] * 3);
       counts[b]++;
     }
+    pool.active = active;
     bucketGeoms.forEach((g, b) => {
+      if (counts[b] === 0 && g.drawRange.count === 0) return;
       g.setDrawRange(0, counts[b]);
       g.getAttribute('position').needsUpdate = true;
-      g.computeBoundingSphere();
     });
 
     // Fire: a flickering orange light in up to four burning apartments.
@@ -152,7 +157,8 @@ export function Hazards({ layout }: { layout: ComplexLayout }) {
     }
   });
 
-  const hazeMat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#84cc16', transparent: true, opacity: 0.25, depthWrite: false }), []);
+  const hazeMat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#84cc16', transparent: true, opacity: .25, depthWrite: false }), []);
+  useLayoutEffect(() => () => { texture?.dispose(); bucketGeoms.forEach(g => g.dispose()); bucketMats.forEach(m => m.dispose()); hazeMat.dispose(); }, [texture, bucketGeoms, bucketMats, hazeMat]);
 
   return (
     <group>
@@ -165,8 +171,8 @@ export function Hazards({ layout }: { layout: ComplexLayout }) {
         const c = centers.get(a.id)!;
         return (
           <mesh key={a.id} ref={(m) => { if (m) gas.current.set(a.id, m); else gas.current.delete(a.id); }} visible={false}
-            material={hazeMat} position={[c.x, c.y - 0.2, c.z]} rotation={[0, b.rotationY, 0]} scale={[10 * b.width / 26, 2.4, 11.6 * b.depth / 12]}>
-            <boxGeometry args={[1, 1, 1]} />
+            geometry={UNIT_BOX} material={hazeMat} position={[c.x, c.y - 0.2, c.z]} rotation={[0, b.rotationY, 0]} scale={[10 * b.width / 26, 2.4, 11.6 * b.depth / 12]}>
+
           </mesh>
         );
       })}

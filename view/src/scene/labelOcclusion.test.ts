@@ -71,3 +71,14 @@ test('the sight line starts at the perspective camera; in 2D (orthographic) it c
   expect(eye.z).toBeCloseTo(-12);
   expect(eye.y).toBeGreaterThan(100);
 });
+
+
+test('ignored instances and transparent meshes never run their costly raycast', () => {
+  const inst = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial(), 100);
+  const glass = wall(5, { transparent: true });
+  const instancesRay = vi.spyOn(inst, 'raycast');
+  const glassRay = vi.spyOn(glass, 'raycast');
+  expect(labelOccluded(ray, eye, target, [new THREE.Group().add(inst, glass)])).toBe(false);
+  expect(instancesRay).not.toHaveBeenCalled();
+  expect(glassRay).not.toHaveBeenCalled();
+});

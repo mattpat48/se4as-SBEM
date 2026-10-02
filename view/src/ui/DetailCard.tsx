@@ -21,13 +21,14 @@ function header(u: Unit): string {
 }
 
 /** Re-render at most twice a second, and at least once a second (for "non aggiornato"). */
-function useRefresh(): void {
-  useLiveStore((s) => s.revision);
+function useRefresh(active: boolean): void {
+  useLiveStore((s) => active ? s.revision : 0);
   const [, setTick] = useState(0);
   useEffect(() => {
+    if (!active) return;
     const id = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [active]);
 }
 
 export function DetailCard() {
@@ -36,7 +37,7 @@ export function DetailCard() {
   const [open, setOpen] = useState<string | null>(null);
   const selectedDevice = useUiStore((s) => s.selectedDevice);
   useEffect(() => { setOpen(selectedDevice); }, [selectedDevice]);
-  useRefresh();
+  useRefresh(!!unitId);
   const unit = model?.units.find((u) => u.id === unitId);
   if (!model || !unit) return null;
 

@@ -13,7 +13,7 @@ const OUTDOOR: Place = { kind: 'outdoor' };
 const inside = (r: PlanRect, u: number, v: number) => u >= r.u0 && u <= r.u1 && v >= r.v0 && v <= r.v1;
 const [bu0, bv0] = mirror(BALCONY.u1, BALCONY.v1);
 const [bu1, bv1] = mirror(BALCONY.u0, BALCONY.v0);
-const BALCONY_2: PlanRect = { u0: bu0, u1: bu1, v0: bv0, v1: bv1 };
+const BALCONY_2: PlanRect = { u0: bu0, u1: bu1, v0: Math.min(bv0, bv1), v1: Math.max(bv0, bv1) };
 
 export function locate(layout: ComplexLayout, openBuilding: string | null, w: { x: number; z: number; feet: number }): Place {
   const b = layout.buildings.find((x) => x.id === openBuilding);

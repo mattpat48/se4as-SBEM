@@ -1,4 +1,4 @@
-// Door leaves (V21): wooden doors in the apartments, dark double portoni in the androne. Each leaf
+// Door leaves (V21): wooden doors in the apartments, oak and glazed double portoni in the androne. Each leaf
 // turns about its hinge towards the store's state in DOOR_OPEN_S; the shared `doorOpenness` map
 // tells the collisions how far each door is open. Inside a Building group (local metres).
 import { useFrame } from '@react-three/fiber';
@@ -14,12 +14,12 @@ import { planLocal } from './geom';
 import { UNIT_BOX, fixedMat, mat } from './materials';
 
 const LEAF_THICK_M = 0.05;
-const portoneMat = () => fixedMat('door', () => new THREE.MeshStandardMaterial({ color: '#334155', roughness: 0.3, metalness: 0.2 }));
+const portoneMat = () => fixedMat('door', () => new THREE.MeshStandardMaterial({ color: '#c9aa7e', roughness: 0.55, metalness: 0.08 }));
 
 interface LeafMesh { door: DoorSpec; index: number; y0: number; h: number }
 
 export function Doors({ b, doors }: { b: BuildingGeom; doors: DoorSpec[] }) {
-  const refs = useRef<(THREE.Mesh | null)[]>([]);
+  const refs = useRef<(THREE.Group | null)[]>([]);
   const leaves = useMemo(() => doors.flatMap((door) => {
     const portone = door.kind === 'portone';
     const y0 = PLINTH_M + door.floor * b.floorHeight + (portone ? CORE_SLAB_M : APT_SLAB_M);
@@ -51,9 +51,17 @@ export function Doors({ b, doors }: { b: BuildingGeom; doors: DoorSpec[] }) {
   return (
     <group>
       {leaves.map((l, i) => (
-        <mesh key={`${l.door.id}#${l.index}`} ref={(m) => { refs.current[i] = m; }} geometry={UNIT_BOX}
-          material={l.door.kind === 'portone' ? portoneMat() : mat('wood')} castShadow receiveShadow
-          userData={{ doorId: l.door.id }} />
+        <group key={`${l.door.id}#${l.index}`} ref={(m) => { refs.current[i] = m; }} userData={{ doorId: l.door.id }}>
+          <mesh geometry={UNIT_BOX} material={l.door.kind === 'portone' ? portoneMat() : mat('wood')} castShadow receiveShadow userData={{ doorId: l.door.id }} />
+          {l.door.kind === 'portone' && <>
+            {[-1, 1].map((side) => <group key={side}>
+              <mesh geometry={UNIT_BOX} material={fixedMat('entrance-glazing', () => new THREE.MeshStandardMaterial({ color: '#c5e4e8', metalness: .35, roughness: .12 }))}
+                position={[0, .06, side * .56]} scale={[.73, .72, .14]} userData={{ doorId: l.door.id }} />
+              <mesh geometry={UNIT_BOX} material={fixedMat('entrance-brass', () => new THREE.MeshStandardMaterial({ color: '#c5b17b', metalness: .8, roughness: .25 }))}
+                position={[(l.index === 0 ? 1 : -1) * .34, -.03, side * 1.1]} scale={[.035, .22, .35]} userData={{ doorId: l.door.id }} />
+            </group>)}
+          </>}
+        </group>
       ))}
     </group>
   );

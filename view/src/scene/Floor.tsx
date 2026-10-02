@@ -14,6 +14,7 @@ import { TWIN_EDGES, UNIT_BOX, UNIT_BOX_EDGES, fixedMat, mat } from './materials
 import { InteriorWalls } from './InteriorWalls';
 import { registerUnit, unregisterUnit } from './registry';
 import { StairFlights, TopRailing } from './StairFlights';
+import { MergedBoxes } from './MergedBoxes';
 
 const APT1: PlanRect = { u0: 0, u1: 10.5, v0: 0, v1: PLAN_D };
 const APT1_PERIMETER: [number, number, number, number][] = [
@@ -84,9 +85,8 @@ export function Balcony({ b, y0, mirrored, faded, patio }: { b: BuildingGeom; y0
       {patio
         ? <mesh geometry={UNIT_BOX} material={mat('path', faded)} {...planBox(b, BALCONY, y0 - 0.1, 0.1, mirrored)} receiveShadow />
         : <mesh geometry={UNIT_BOX} material={mat('slab', faded)} {...planBox(b, BALCONY, y0 - 0.2, 0.2, mirrored)} castShadow receiveShadow />}
-      {([[u0, v1, u1, v1], [u0, v0, u0, v1], [u1, v0, u1, v1]] as [number, number, number, number][]).map((w, i) => (
-        <mesh key={i} geometry={UNIT_BOX} material={railMat()} {...planWall(b, w, y0, 1.1, 0.05, mirrored)} />
-      ))}
+      <MergedBoxes material={railMat()} boxes={([[u0, v1, u1, v1], [u0, v0, u0, v1], [u1, v0, u1, v1]] as [number, number, number, number][])
+        .map((w) => planWall(b, w, y0, 1.1, .05, mirrored))} />
     </group>
   );
 }
@@ -130,10 +130,8 @@ export function Floor({ b, floor, mode, apartments, faded, stairwellId }: FloorP
           <>
             <mesh geometry={UNIT_BOX} material={mat('slab', faded)} {...planBox(b, CORE, y0, 0.1)} receiveShadow userData={{ unitId: stairwellId }} />
             {plan2d
-              ? feet.flatMap(({ apt, mirrored }) => [...INTERIOR_WALLS, ...APT1_PERIMETER].map((w, i) => (
-                <mesh key={`${apt.id}-${i}`} geometry={UNIT_BOX} material={mat('wall', faded)}
-                  {...planWall(b, w, y0, wallH, 0.2, mirrored)} castShadow receiveShadow />
-              )))
+              ? feet.map(({ apt, mirrored }) => <MergedBoxes key={apt.id} material={mat('wall', faded)}
+                boxes={[...INTERIOR_WALLS, ...APT1_PERIMETER].map((w) => planWall(b, w, y0, wallH, .2, mirrored))} userData={{ unitId: apt.id }} />)
               : feet.map(({ apt }) => (
                 <InteriorWalls key={`walls-${apt.id}`} b={b} apt={apt} ceiling={wallH} entryOpen faded={faded} />
               ))}
