@@ -8,10 +8,11 @@ import { useConnectionStore } from './store/connection';
 import { useLiveStore } from './store/live';
 import { useModelStore } from './store/model';
 import { useUiStore } from './store/ui';
+import { doorOpenness, useWalkStore, walker } from './store/walk';
 
 // Development only: the stores are reachable from the browser console as window.__view.
 if (import.meta.env.DEV) {
-  (window as any).__view = { useUiStore, useLiveStore, useModelStore, useConnectionStore, useCommandStore, cameraApi };
+  (window as any).__view = { useUiStore, useLiveStore, useModelStore, useConnectionStore, useCommandStore, cameraApi, useWalkStore, walker, doorOpenness };
 }
 
 createRoot(document.getElementById('root')!).render(

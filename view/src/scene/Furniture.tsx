@@ -1,6 +1,6 @@
 // Furniture of the furnished apartments (decision V20): Kenney Furniture Kit models (CC0) fitted to
 // the footprints of `domain/furniture.ts`, drawn as instances for every apartment of the cut floor,
-// or for the visited one in first person. The boiler is the only piece drawn in code.
+// or of the open building in first person (V21). The boiler is the only piece drawn in code.
 import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useLayoutEffect, useMemo, useRef } from 'react';
@@ -11,6 +11,7 @@ import { FURNITURE_MODEL_FILES, furnitureModelUrl, modelPieces } from '../domain
 import type { ApartmentGeom, BuildingGeom, ComplexLayout } from '../domain/layout';
 import { buildingMode } from '../domain/visibility';
 import { useUiStore } from '../store/ui';
+import { useWalkStore } from '../store/walk';
 import { atmosphere } from './atmosphere';
 import { mat } from './materials';
 import { apartmentMatrix, fitItem } from './modelFit';
@@ -75,7 +76,8 @@ const ignorePick = () => {};
 
 export function Furniture({ layout }: { layout: ComplexLayout }) {
   const floor = useUiStore((s) => s.floor);
-  const inside = useUiStore((s) => s.firstPersonUnit);
+  const walking = useWalkStore((s) => s.active);
+  const open = useWalkStore((s) => (s.active ? s.openBuilding : null));
   const selectedBuilding = useUiStore((s) => s.building);
   const dataMode = useUiStore((s) => s.dataMode);
   const { parts, bounds, materials } = useModelParts();
@@ -86,11 +88,11 @@ export function Furniture({ layout }: { layout: ComplexLayout }) {
     for (const apt of layout.apartments) {
       const b = byId.get(apt.building);
       if (!b?.supportsPlan) continue;
-      if (inside ? apt.id !== inside : apt.floor !== floor) continue;
-      out.push({ b, apt, faded: !inside && buildingMode(b.id, selectedBuilding) === 'faded' });
+      if (walking ? apt.building !== open : apt.floor !== floor) continue;
+      out.push({ b, apt, faded: !walking && buildingMode(b.id, selectedBuilding) === 'faded' });
     }
     return out;
-  }, [layout, floor, inside, selectedBuilding]);
+  }, [layout, floor, walking, open, selectedBuilding]);
 
   // One instanced mesh per model mesh, and per faded / normal look.
   const meshes = useMemo(() => {

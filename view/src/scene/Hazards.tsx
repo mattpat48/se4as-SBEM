@@ -9,6 +9,7 @@ import { coWarning, gasHaze, isFire, smokeDensity } from '../domain/effects';
 import { planToWorld, type ComplexLayout, type Vec3 } from '../domain/layout';
 import { PLAN_D, WINDOWS } from '../domain/plan';
 import { useUiStore } from '../store/ui';
+import { useWalkStore } from '../store/walk';
 import { readingNow } from './readings';
 
 const MAX_PARTICLES = 2400;
@@ -126,6 +127,8 @@ export function Hazards({ layout }: { layout: ComplexLayout }) {
     // Fire: a flickering orange light in up to four burning apartments.
     let li = 0;
     const cutFloor = useUiStore.getState().floor;
+    const walk = useWalkStore.getState();
+    const open = walk.active ? walk.openBuilding : null;
     for (const a of layout.apartments) {
       const burning = isFire(readingNow(`${a.id}.temperature`, now), readingNow(`${a.id}.smoke`, now));
       if (burning && li < MAX_FIRE_LIGHTS) {
@@ -134,7 +137,7 @@ export function Hazards({ layout }: { layout: ComplexLayout }) {
         if (l) { l.position.set(c.x, c.y, c.z); l.intensity = 40 + 25 * Math.sin(t * 17) * Math.sin(t * 7.3); }
       }
       const haze = gas.current.get(a.id);
-      if (haze) haze.visible = cutFloor === a.floor && gasHaze(readingNow(`${a.id}.gas`, now));
+      if (haze) haze.visible = (open ? a.building === open : cutFloor === a.floor) && gasHaze(readingNow(`${a.id}.gas`, now));
     }
     for (; li < MAX_FIRE_LIGHTS; li++) { const l = lights.current[li]; if (l) l.intensity = 0; }
 

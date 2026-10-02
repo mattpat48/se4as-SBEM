@@ -7,6 +7,7 @@ import { useLiveStore } from '../store/live';
 import { useModelStore } from '../store/model';
 import { chooseWalkApartment } from '../domain/walk';
 import { useUiStore } from '../store/ui';
+import { useWalkStore } from '../store/walk';
 
 function useClockLabel(): string {
   const [label, setLabel] = useState('—');
@@ -66,7 +67,7 @@ export function TopBar() {
   const heatQuantity = useUiStore((s) => s.heatQuantity);
   const heatOn = useUiStore((s) => s.heatOn);
   const dataMode = useUiStore((s) => s.dataMode);
-  const inside = useUiStore((s) => s.firstPersonUnit);
+  const inside = useWalkStore((s) => s.active);
   const selectedUnit = useUiStore((s) => s.selectedUnit);
   const entry = layout ? chooseWalkApartment(layout, selectedUnit, building, floor) : null;
   const ui = useUiStore.getState();
@@ -78,10 +79,10 @@ export function TopBar() {
       <strong className="topbar__name">{name}</strong>
       <span className="topbar__clock">{clock}</span>
       <div className="segmented" role="group" aria-label="Modalità">
-        <button className={mode === '3d' && !inside ? 'is-on' : ''} onClick={() => ui.setMode('3d')} title="3 = vista 3D">3D</button>
-        <button className={mode === '2d' ? 'is-on' : ''} onClick={() => ui.setMode('2d')} title="2 = planimetria 2D">2D</button>
+        <button className={mode === '3d' && !inside ? 'is-on' : ''} onClick={() => { useWalkStore.getState().exit(); ui.setMode('3d'); }} title="3 = vista 3D">3D</button>
+        <button className={mode === '2d' ? 'is-on' : ''} onClick={() => { useWalkStore.getState().exit(); ui.setMode('2d'); }} title="2 = planimetria 2D">2D</button>
       </div>
-      <button className={`walk-enter ${inside ? 'is-on' : ''}`} disabled={!inside && !entry} onClick={() => { if (inside) ui.exitApartment(); else if (entry) ui.enterApartment(entry.id, entry.building, entry.floor); }}>{inside ? 'Esci dalla casa' : 'Entra in casa'}</button>
+      <button className={`walk-enter ${inside ? 'is-on' : ''}`} disabled={!inside && !entry} onClick={() => { if (inside) useWalkStore.getState().exit(); else if (entry && layout) useWalkStore.getState().start(layout, entry.id); }}>{inside ? 'Esci dalla casa' : 'Entra in casa'}</button>
       <label className="topbar__field">Palazzo
         <select disabled={!!inside} value={building ?? ''} onChange={(e) => ui.setBuilding(e.target.value || null)}>
           <option value="">Tutti</option>

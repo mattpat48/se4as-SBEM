@@ -7,6 +7,7 @@ import { CAMERA_LIMITS, focusOnBuilding } from '../domain/camera';
 import { shakeAmplitude } from '../domain/effects';
 import type { ComplexLayout } from '../domain/layout';
 import { useUiStore } from '../store/ui';
+import { useWalkStore } from '../store/walk';
 import { FirstPersonNavigation } from './FirstPersonNavigation';
 import { readingNow } from './readings';
 
@@ -43,9 +44,7 @@ function configure(c: CameraControlsImpl, ortho: boolean, viewHeightPx: number) 
 }
 
 export function CameraRig({ layout }: { layout: ComplexLayout }) {
-  const insideUnit = useUiStore((s) => s.firstPersonUnit);
-  const apt = layout.apartments.find((a) => a.id === insideUnit);
-  const insideBuilding = layout.buildings.find((b) => b.id === apt?.building);
+  const walking = useWalkStore((s) => s.active);
   const mode = useUiStore((s) => s.mode);
   const building = useUiStore((s) => s.building);
   const size = useThree((s) => s.size);
@@ -64,7 +63,7 @@ export function CameraRig({ layout }: { layout: ComplexLayout }) {
     const isOrtho = (controls.camera as THREE.OrthographicCamera).isOrthographicCamera === true;
     if (isOrtho !== (active === 'ortho')) return;
     cameraApi.controls = controls;
-    if (insideUnit) {
+    if (walking) {
       controls.minDistance = .01; controls.minPolarAngle = .03; controls.maxPolarAngle = Math.PI - .03;
       return () => { if (cameraApi.controls === controls) cameraApi.controls = null; };
     }
@@ -80,7 +79,7 @@ export function CameraRig({ layout }: { layout: ComplexLayout }) {
     }
     initialized.current = true;
     return () => { if (cameraApi.controls === controls) cameraApi.controls = null; };
-  }, [controls, active, size.height, insideUnit]);
+  }, [controls, active, size.height, walking]);
 
   // 3D → 2D: rotate to a top-down view (north up), then swap to an orthographic camera of equal visible height.
   useEffect(() => {
@@ -113,14 +112,14 @@ export function CameraRig({ layout }: { layout: ComplexLayout }) {
   useEffect(() => {
     const c = controls;
     const b = layout.buildings.find((x) => x.id === building);
-    if (!c || !b || insideUnit) return;
+    if (!c || !b || walking) return;
     if (active === 'persp') {
       const f = focusOnBuilding(b);
       c.setLookAt(f.position.x, f.position.y, f.position.z, f.target.x, f.target.y, f.target.z, true);
     } else {
       c.moveTo(b.center.x, 0, b.center.z, true);
     }
-  }, [building, controls, layout, active, insideUnit]);
+  }, [building, controls, layout, active, walking]);
 
   // Earthquake (§7.8): a random offset of the camera position (not the target) while seismic > 3.
   // The previous offset is removed before the controls update (-2 < -1) and a new one added after.
@@ -135,10 +134,10 @@ export function CameraRig({ layout }: { layout: ComplexLayout }) {
 
   return (
     <>
-      <PerspectiveCamera makeDefault={active === 'persp'} fov={insideUnit ? 68 : FOV} near={0.04} far={1500} position={[...INITIAL.position]} />
+      <PerspectiveCamera makeDefault={active === 'persp'} fov={walking ? 68 : FOV} near={0.04} far={1500} position={[...INITIAL.position]} />
       <OrthographicCamera ref={orthoRef} makeDefault={active === 'ortho'} near={0.5} far={2000} />
-      <CameraControls ref={setControls} makeDefault enabled={!insideUnit} />
-      {apt && insideBuilding && controls && active === 'persp' && <FirstPersonNavigation key={apt.id} b={insideBuilding} apt={apt} controls={controls} />}
+      <CameraControls ref={setControls} makeDefault enabled={!walking} />
+      {walking && controls && active === 'persp' && <FirstPersonNavigation layout={layout} controls={controls} />}
     </>
   );
 }

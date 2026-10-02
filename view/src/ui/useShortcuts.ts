@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import { shortcutAction } from '../domain/shortcuts';
 import { useUiStore } from '../store/ui';
+import { useWalkStore } from '../store/walk';
 
 export function useShortcuts(): void {
   useEffect(() => {
@@ -9,9 +10,10 @@ export function useShortcuts(): void {
       const t = e.target as HTMLElement | null;
       if (t && ['INPUT', 'SELECT', 'TEXTAREA'].includes(t.tagName)) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      const inside = useUiStore.getState().firstPersonUnit;
-      if (inside && ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(e.key.toLowerCase())) return;
-      if (inside && e.key === 'Escape') { useUiStore.getState().exitApartment(); return; }
+      const walk = useWalkStore.getState();
+      const inside = walk.active;
+      if (inside && ['w', 'a', 's', 'd', 'e', 'shift', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(e.key.toLowerCase())) return;
+      if (inside && e.key === 'Escape') { walk.exit(); return; }
       const action = shortcutAction(e.key);
       if (!action) return;
       const ui = useUiStore.getState();
@@ -19,8 +21,8 @@ export function useShortcuts(): void {
         case 'toggleDebug': ui.toggleDebug(); break;
         case 'toggleHeat': ui.toggleHeat(); break;
         case 'toggleDataMode': ui.toggleDataMode(); break;
-        case 'mode2d': ui.setMode('2d'); break;
-        case 'mode3d': ui.setMode('3d'); break;
+        case 'mode2d': walk.exit(); ui.setMode('2d'); break;
+        case 'mode3d': walk.exit(); ui.setMode('3d'); break;
         case 'deselect':
           ui.clearSelection();
           if (ui.mode === '3d') { ui.setBuilding(null); ui.setFloor(null); }

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { useUiStore } from './store/ui';
+import { useWalkStore } from './store/walk';
+import { WalkMinimap } from './ui/WalkMinimap';
 import { WalkOverlay } from './ui/WalkOverlay';
 import { config } from './config';
 import { connectView } from './mqtt/client';
@@ -17,7 +18,7 @@ export default function App() {
   useEffect(() => connectView(config), []);
   useShortcuts();
   const layout = useModelStore((s) => s.layout);
-  const inside = useUiStore((s) => s.firstPersonUnit);
+  const inside = useWalkStore((s) => s.active);
   const version = useModelStore((s) => s.version);
 
   return (
@@ -25,6 +26,7 @@ export default function App() {
       {layout && <Viewport key={version} layout={layout} />}
       <TopBar />
       {layout && !inside && <MinimapOverlay />}
+      {layout && inside && <WalkMinimap layout={layout} />}
       <WalkOverlay />
       {layout && <DetailCard />}
       {layout && !inside && <Legend />}

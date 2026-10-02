@@ -30,6 +30,7 @@ Questo file traccia **cosa deve fare** la vista 3D del complesso residenziale, *
 | **Copione della demo** | [Specifica della vista, §13](superpowers/specs/2026-09-30-vista-3d-design.md#13-copione-della-demo-fase-1-circa-4-minuti); provato il 2026-10-01 (sezione 3.2) | ✅ T6 |
 | **Arredi e residenti 3D** (modelli esterni CC0, V20) | Modelli in `view/public/models/` (`furniture/`, `people/`); fonti e licenze in [`view/public/models/CREDITS.md`](../view/public/models/CREDITS.md); si rigenerano con `scripts/build-models.sh`. Tabella ingombro → modello in `view/src/domain/furnitureModels.ts`, adattamento in `view/src/scene/modelFit.ts`, residenti in `view/src/domain/residents.ts` e `view/src/scene/People.tsx` | ✅ V20 |
 | Prototipo usa e getta dei tre stili (solo riferimento visivo) | `.superpowers/brainstorm/…/content/stile-3d-v2.html` (non versionato) | — |
+| **Prima persona** (V21: porte, scale, balcone, parco, altri palazzi, comando "Vai a…") | [Specifica V21](superpowers/specs/2026-10-02-prima-persona-mondo-continuo-design.md) e [piano](superpowers/plans/2026-10-02-prima-persona-mondo-continuo.md). Codice: collisioni e livelli in `view/src/domain/walkWorld.ts`, movimento in `walk.ts`, scale in `stairs.ts`, porte in `doors.ts`, luogo in `whereabouts.ts`; stato in `store/walk.ts`; scena in `scene/OpenBuilding.tsx`, `Doors.tsx`, `StairFlights.tsx`, `RoomLightPool.tsx`, `FirstPersonNavigation.tsx`; pannello in `ui/WalkOverlay.tsx` e `ui/WalkMinimap.tsx` | ✅ V21 |
 | Codice della vista 3D | Cartella `view/` (test accanto ai moduli, `npm test`; prova end-to-end in `scripts/e2e_view.py`) | ✅ T1 |
 
 ---
@@ -68,7 +69,7 @@ La vista è **solo una vista**: nessuna logica di simulazione al suo interno. Le
 
 | V19 | 2026-10-01 | **Arredi di base e dispositivi realistici come scenografia**: geometrie procedurali, arredi solo sul piano tagliato, interni ruotati di 180°, ingombri e passaggi verificati con test. Sensori con forme dedicate e LED di famiglia; animazioni e identificatori dei dispositivi conservati | Eccezione esplicita a V7 («niente decorazioni senza dati») per migliorare l’immersione nella demo: la scenografia non rappresenta nuovi dati né decide azioni. Meno del 40% del pavimento di ogni stanza è coperto; la mappa di calore resta leggibile. Quattro geometrie unite per appartamento, materiali condivisi giorno/notte/dati, nessuna luce aggiuntiva |
 | V20 | 2026-10-02 | **Modelli 3D esterni per arredi e persone** (supera la parte di V0 "nessun modello 3D esterno" e le geometrie procedurali di V19): **arredi Kenney Furniture Kit** (CC0) adattati agli ingombri già definiti in `domain/furniture.ts`; **residenti Quaternius "Ultimate Modular"** già vestiti (CC0), animati. Nello spaccato i **muri restano interi** (circa 2,9 m) invece che tagliati a 1,1 m. **Pavimento in legno** di base; con la mappa di calore attiva il pavimento prende il colore del dato. La caldaia resta disegnata a codice (il pacchetto non la contiene) | Prova usa e getta del 2026-10-02: aspetto molto migliore delle forme procedurali, stile low-poly coerente tra arredi e persone, licenze CC0 verificate nei file dei pacchetti. I personaggi base Quaternius "Universal" sono stati scartati perché privi di vestiti (gli abiti abbinati sono solo fantasy). ✅ **Implementata il 2026-10-02** (sezione 3.2). Dettagli decisi durante l'implementazione: 8 personaggi, 4 donne e 4 uomini ("Ultimate Modular Males", CC0); nello spaccato i muri di casa sono quelli della prima persona, con vani finestra e porte, e ante e tapparelle si vedono anche lì; i dispositivi stanno alle quote reali; la planimetria 2D resta com'era (muri a 1,1 m, dispositivi bassi) |
-| V21 | 2026-10-02 | ❓ **In progettazione: prima persona in un mondo continuo.** Già deciso: (1) si esce sul balcone (patio al piano terra); (2) **tutte le porte hanno l'anta** (interne, ingresso, portafinestra, portoni dell'androne) e si aprono e chiudono con **E o clic**; una porta chiusa blocca il passaggio; sono scenografia, non dispositivi; (3) si cambia palazzo **sia a piedi** (scale, androne, parco, altro palazzo) **sia con un comando** nel pannello della prima persona; (4) **approccio B**: è aperto e percorribile solo il palazzo in cui ci si trova, gli altri restano volumi pieni; all'aperto tutti pieni; (5) camminata più veloce, con Shift ancora di più. Da confermare: scala a due rampe con pianerottolo intermedio (anche nello spaccato), velocità, ascensore, ostacoli all'aperto | Richiesta dell'utente per una demo più immersiva. B tiene un solo palazzo aperto alla volta (8 interni) e lascia invariato l'esterno già curato. Scartati A (tutti i 32 interni sempre disegnati, più pesante e con l'esterno da rifare) e C (niente parco a piedi) |
+| V21 | 2026-10-02 | **Prima persona in un mondo continuo** ([specifica](superpowers/specs/2026-10-02-prima-persona-mondo-continuo-design.md)). Deciso con l'utente: (1) si esce sul balcone (patio al piano terra); (2) **tutte le porte hanno l'anta** (5 interne, ingresso, porta-balcone, portoni) e si aprono e chiudono con **E o clic**, con un'animazione di 0,6 s; una porta chiusa blocca; sono scenografia, non dispositivi; (3) si cambia palazzo **a piedi** e con il comando **"Vai a…"** (palazzo, piano, interno); (4) **approccio B**: è aperto solo il palazzo in cui ci si trova, che cambia quando si apre il portone di un altro; gli altri restano volumi pieni; (5) camminata più veloce. **Deciso in autonomia, da rivedere** (l'utente ha chiesto di implementare subito): scala a **due rampe** con pianerottolo intermedio (2 × 9 alzate di `fh/18`), anche nello spaccato e in 2D; velocità **3 m/s, 6 m/s con Shift**; niente ascensore percorribile; ostacoli all'aperto (palazzi, patii, tronchi, fontana, colonnine, pali), **tre gradini** davanti al portone del parco; **portone verso la strada chiuso a chiave** (dietro c'è la rampa); porta-balcone nella campata `u` 3,2–4,1 della portafinestra, bloccata dalla tapparella abbassata oltre il 20 %; luogo corrente nel pannello; arredi, dispositivi e residenti in tutto il palazzo aperto; **minimappa SVG** in prima persona; mappa di calore come prima (spenta all'ingresso, `H` la riaccende); porte interne aperte e le altre chiuse all'avvio; patii con ringhiera | Richiesta dell'utente per una demo più immersiva. B tiene un solo palazzo aperto (8 interni, lo stesso carico dello spaccato) e lascia invariato l'esterno. Scartati A (32 interni sempre disegnati) e C (niente parco a piedi). Il portone sulla strada non può aprirsi senza ridisegnare il vano scale (V6). ✅ **Implementata il 2026-10-02** (sezione 3.2) |
 
 ---
 
@@ -83,7 +84,7 @@ La vista è **solo una vista**: nessuna logica di simulazione al suo interno. Le
 | T5 | Atmosfera ed emergenze: giorno→notte, meteo, fumo, fuoco, sirene, sisma, modalità dati | Un incendio avviato con `mosquitto_pub` si vede nascere e propagarsi | ✅ |
 | T6 | Documentazione (questo file con la checklist visiva, MONITOR.md, README) e prova del copione della demo | Il copione funziona da capo a fondo | ✅ |
 
-**Fase 2** (dopo Monitor, Analyzer e Planner v2): strato leggero del manager, persone evacuate nel parco (V9), prima persona (V4). Avrà una sua specifica.
+**Fase 2** (dopo Monitor, Analyzer e Planner v2): strato leggero del manager, persone evacuate nel parco (V9). Avrà una sua specifica. La prima persona (V4) è arrivata prima: V20 dentro un appartamento, V21 nel mondo continuo.
 
 ### 3.1 Come avviarla e provarla
 
@@ -109,7 +110,7 @@ docker run --rm -v "$PWD/mosquitto/config:/mosquitto/config" eclipse-mosquitto:2
 
 poi `docker compose restart mosquitto`. I permessi sono in `mosquitto/config/aclfile`.
 
-**Comandi da tastiera:** `D` pannello di debug, `H` mappa di calore, `M` modalità dati, `2`/`3` planimetria 2D o vista 3D, `Esc` deseleziona. Doppio clic su un palazzo per volarci; clic su un appartamento (o un dispositivo) per la scheda di dettaglio; clic sulla minimappa per spostare la vista.
+**Comandi da tastiera:** `D` pannello di debug, `H` mappa di calore, `M` modalità dati, `2`/`3` planimetria 2D o vista 3D, `Esc` deseleziona. **In prima persona** ("Entra in casa"): `W A S D` o frecce per camminare, `Shift` per correre, trascinamento per guardarsi intorno, `E` (o clic) per aprire e chiudere le porte, `Esc` per uscire; "Vai a…" nel pannello porta subito in un altro appartamento. Doppio clic su un palazzo per volarci; clic su un appartamento (o un dispositivo) per la scheda di dettaglio; clic sulla minimappa per spostare la vista.
 
 **Scenari** (restano fuori dalla vista, V10):
 
@@ -120,6 +121,21 @@ docker exec iot_mosquitto mosquitto_pub -u admin -P adminpassword123 -t Complex/
 ### 3.2 Verifica a vista
 
 Ripercorsa il 2026-10-01 nel browser (container su :8080 e server di sviluppo su :5173), insieme al copione della demo (specifica §13). ✅ = visto; ☐ = da ricontrollare a occhio alla prossima prova.
+
+**Prima persona in un mondo continuo (V21)** — provata il 2026-10-02 nel browser integrato (server di sviluppo su :5174, stack Docker attivo); il pannello del browser era nascosto (circa 1 fps), quindi il camminatore è stato spostato con il teleport e il movimento vero è verificato dai test di dominio
+
+- [x] Ingresso in A-2-1: soggiorno arredato, residente, nomi dei dispositivi; pannello con il luogo, comando "Vai a…" e minimappa SVG
+- [x] `E` (evento da tastiera) apre la porta d'ingresso con l'animazione: si vedono il pianerottolo e la porta chiusa dell'interno 2
+- [x] Scala a due rampe dal pianerottolo del piano 2, con finestre delle scale; il pannello mostra "Vano scale A · piano 2"
+- [x] Androne con il portone a due ante chiuso; `E` lo apre; da fuori il palazzo aperto ha facciata, finestre, gradini e pensilina
+- [x] Portone di B aperto da fuori: B diventa il palazzo aperto e il portone di A si chiude
+- [x] "Vai a" B · 1 · 2 dal pannello: B-1-2 (interno ruotato)
+- [x] Porta-balcone aperta con `E`: balcone con ringhiera e sedie
+- [x] Clic su un'anta: la porta si apre (senza selezionare unità)
+- [x] `Esc`: torna la mappa di calore, la vista vola sul palazzo in cui si era; spaccato del piano 1 con la nuova scala; 2D invariata
+- [x] Test automatici: percorso a piedi A-2-1 → B-1-2 (scale, androne, parco, portone, scale), porte, balcone, tapparella, sottoscala e tetto bloccati, nessun attraversamento a 6 m/s
+- [ ] **fps** dentro il palazzo aperto e all'aperto (obiettivo ≥ 50): da misurare con il pannello del browser visibile
+- [ ] Camminata vera con la tastiera a 60 fps (sensazione delle velocità 3 e 6 m/s, gradini, soglia del portone)
 
 **Modelli esterni, muri interi e pavimento in legno (V20)**
 
@@ -243,3 +259,5 @@ I dispositivi mantengono il contratto di `placement.ts`: soltanto la resa dello 
 | 2026-10-02 | Minimappa: il pallino segna il punto inquadrato (dove porta il clic), il cono parte dalla camera; prima segnava la camera e il clic sembrava portare altrove |
 | 2026-10-02 | Etichette coperte: un'etichetta si nasconde quando un palazzo opaco sta tra la camera e il suo punto (appartamenti: almeno una facciata in vista; dispositivi: l'etichetta o il dispositivo in vista); le icone di pericolo restano sempre visibili |
 | 2026-10-02 | Decisione V21 in progettazione: prima persona in un mondo continuo (balcone, porte apribili, scale, altri palazzi a piedi o con un comando, approccio B, velocità maggiore) |
+| 2026-10-02 | V21: sezione 1 del design (architettura) approvata; su richiesta dell'utente le altre scelte sono state prese in autonomia e segnate "da rivedere". Scritti la [specifica](superpowers/specs/2026-10-02-prima-persona-mondo-continuo-design.md) e il [piano](superpowers/plans/2026-10-02-prima-persona-mondo-continuo.md) |
+| 2026-10-02 | V21 implementata con TDD: scala a due rampe (anche nello spaccato e in 2D), 58 porte per palazzo, mondo percorribile con superfici e ostacoli, movimento a 3/6 m/s, luogo corrente, store `walk`, palazzo aperto (`OpenBuilding`), comando "Vai a…", minimappa SVG, gruppo fisso di 6 luci delle stanze, patii con ringhiera; eliminato `ApartmentInterior`. 194 test, controllo TypeScript e build superati; verifica nel browser (sezione 3.2) |

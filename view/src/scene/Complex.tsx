@@ -1,14 +1,19 @@
 // The whole complex: ground, ring road, park, parking, buildings.
 import type { ThreeEvent } from '@react-three/fiber';
+import { useMemo } from 'react';
 import * as THREE from 'three';
 import type { ComplexLayout } from '../domain/layout';
+import { useModelStore } from '../store/model';
 import { useUiStore } from '../store/ui';
+import { useWalkStore, walker } from '../store/walk';
 import { Building } from './Building';
 import { Cars } from './Cars';
 import { Devices } from './Devices';
 import { UNIT_BOX, mat } from './materials';
 import { Park } from './Park';
+import { OpenBuilding } from './OpenBuilding';
 import { Parking } from './Parking';
+import { RoomLightPool } from './RoomLightPool';
 
 const ROADS: [number, number, number, number][] = [[170, 8, 0, -72], [170, 8, 0, 92], [8, 172, -82, 10], [8, 172, 82, 10]];
 
@@ -27,8 +32,20 @@ export function pickTarget(e: ThreeEvent<MouseEvent>): { unitId: string; deviceI
   return null;
 }
 
+/** Doors answer a click within this distance of the walker (V21). */
+const DOOR_REACH_M = 3;
+
 export function onPick(e: ThreeEvent<MouseEvent>) {
   if (e.delta > 4) return;                        // a drag of the camera, not a click
+  const doorId = e.object.userData?.doorId as string | undefined;
+  if (doorId) {
+    e.stopPropagation();
+    const layout = useModelStore.getState().layout;
+    const p = e.point;
+    if (layout && useWalkStore.getState().active && Math.hypot(p.x - walker.x, p.z - walker.z) <= DOOR_REACH_M
+      && Math.abs(p.y - walker.feet - 1) < 2) useWalkStore.getState().toggleDoor(layout, doorId);
+    return;
+  }
   const t = pickTarget(e);
   if (!t) return;
   e.stopPropagation();
@@ -38,6 +55,9 @@ export function onPick(e: ThreeEvent<MouseEvent>) {
 }
 
 export function Complex({ layout }: { layout: ComplexLayout }) {
+  const walking = useWalkStore((s) => s.active);
+  const open = useWalkStore((s) => (s.active ? s.openBuilding : null));
+  const byBuilding = useMemo(() => new Map(layout.buildings.map((b) => [b.id, layout.apartments.filter((a) => a.building === b.id)])), [layout]);
   return (
     <group onClick={onPick}>
       <mesh geometry={UNIT_BOX} material={mat('ground')} position={[0, -0.5, 0]} scale={[200, 1, 200]} receiveShadow />
@@ -46,9 +66,10 @@ export function Complex({ layout }: { layout: ComplexLayout }) {
       ))}
       <Park layout={layout} />
       <Parking layout={layout} />
-      {layout.buildings.map((b) => (
-        <Building key={b.id} b={b} apartments={layout.apartments.filter((a) => a.building === b.id)} />
-      ))}
+      {layout.buildings.map((b) => (b.id === open && b.supportsPlan
+        ? <OpenBuilding key={`open-${b.id}`} layout={layout} b={b} />
+        : <Building key={b.id} b={b} apartments={byBuilding.get(b.id)!} />))}
+      {walking && <RoomLightPool layout={layout} />}
       <Devices layout={layout} />
       <Cars layout={layout} />
     </group>

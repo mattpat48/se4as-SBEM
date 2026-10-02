@@ -13,6 +13,8 @@ import { LIFT, PLINTH_M, SILL_M, TALL_WINDOW_H_M, WINDOWS, WINDOW_H_M, PLAN_D } 
 import { floorMode } from '../domain/visibility';
 import { useLiveStore } from '../store/live';
 import { useUiStore } from '../store/ui';
+import { useWalkStore } from '../store/walk';
+import { sashSpans } from '../domain/doors';
 import { approach, blink } from './anim';
 import { apartmentDevicePose, ROOM_LIGHTS } from '../domain/deviceAppearance';
 import { ApartmentSensors } from './ApartmentSensors';
@@ -33,7 +35,8 @@ const OUTDOOR = '#3b82f6';
 function useInsideVisible() {
   const floor = useUiStore((s) => s.floor);
   const building = useUiStore((s) => s.building);
-  return (b: string, f: number) => floor !== null ? f === floor : building === b;
+  const open = useWalkStore((s) => (s.active ? s.openBuilding : null));
+  return (b: string, f: number) => open !== null ? b === open : floor !== null ? f === floor : building === b;
 }
 
 // ---------------------------------------------------------------- sensors
@@ -105,13 +108,14 @@ export function WindowActuators({ b, apt, immersive = false }: { b: BuildingGeom
   const sashes = useRef<(THREE.Group | null)[]>([]);
   const blinds = useRef<(THREE.Mesh | null)[]>([]);
   const cur = useRef({ angle: 0, cover: 0 });
-  const wins = useMemo(() => WINDOWS.filter((w) => w.unit === 'apt1').map((w) => {
+  // The french window keeps its sashes beside the balcony door (V21).
+  const wins = useMemo(() => WINDOWS.filter((w) => w.unit === 'apt1').flatMap((w) => sashSpans(w).map(([u0, u1]) => {
     const v = w.side === 1 ? PLAN_D : 0;
-    const [xa, z] = planLocal(b, w.u0, v, apt.mirrored);
-    const [xb] = planLocal(b, w.u1, v, apt.mirrored);
+    const [xa, z] = planLocal(b, u0, v, apt.mirrored);
+    const [xb] = planLocal(b, u1, v, apt.mirrored);
     const h = w.tall ? TALL_WINDOW_H_M : WINDOW_H_M;
     return { x0: Math.min(xa, xb), w: Math.abs(xb - xa), z, h, y0: PLINTH_M + apt.floor * b.floorHeight + (w.tall ? 0 : SILL_M) };
-  }), [b, apt]);
+  })), [b, apt]);
 
   useFrame((_, dt) => {
     const c = cur.current;
@@ -149,8 +153,8 @@ export function WindowActuators({ b, apt, immersive = false }: { b: BuildingGeom
  * Interior devices of one apartment, shown on the cut floor. `realHeights` mounts them as in the
  * first person, as the 3D cut does with its whole walls (V20); the 2D plan keeps them low.
  */
-export function InteriorActuators({ b, apt, immersive = false, realHeights = immersive }: {
-  b: BuildingGeom; apt: ApartmentGeom; immersive?: boolean; realHeights?: boolean;
+export function InteriorActuators({ b, apt, realHeights = false }: {
+  b: BuildingGeom; apt: ApartmentGeom; realHeights?: boolean;
 }) {
   const y0 = PLINTH_M + apt.floor * b.floorHeight;
   const at = (type: string): [number, number, number] => {
@@ -164,7 +168,6 @@ export function InteriorActuators({ b, apt, immersive = false, realHeights = imm
   const flowMat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#60a5fa', transparent: true, opacity: 0.8 }), []);
   const displayMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1f2937', emissive: '#000000', roughness: 0.3 }), []);
   useLayoutEffect(() => () => { flowMat.dispose(); displayMat.dispose(); }, [flowMat, displayMat]);
-  const roomLights = useRef<(THREE.PointLight | null)[]>([]);
   const vent = useRef<THREE.Mesh>(null);
   const handle = useRef<THREE.Mesh>(null);
   const flow = useRef<THREE.Group>(null);
@@ -176,7 +179,6 @@ export function InteriorActuators({ b, apt, immersive = false, realHeights = imm
     const c = cur.current;
     c.lamp = approach(c.lamp, lightLevel(stateOf(`${apt.id}.lights`)), dt);
     lampMat.emissiveIntensity = 2.5 * c.lamp;
-    for (const light of roomLights.current) if (light) light.intensity = 16 * c.lamp;
     alarmMat.emissiveIntensity = sirenOn(stateOf(`${apt.id}.alarm`)) ? 3 * blink(t, 2) : 0;
     if (vent.current) vent.current.rotation.y += 2 * Math.PI * ventTurnsPerSecond(stateOf(`${apt.id}.ventilation`)) * dt;
     c.handle = approach(c.handle, valveOpen(stateOf(`${apt.id}.gas_valve`)) ? 0 : Math.PI / 2, dt, Math.PI / 2);
@@ -198,12 +200,11 @@ export function InteriorActuators({ b, apt, immersive = false, realHeights = imm
   const facing = (type: string) => turn + (apartmentDevicePose(type, realHeights)?.rotationY ?? 0);
   return (
     <group>
-      {ROOM_LIGHTS.map((l, i) => {
+      {ROOM_LIGHTS.map((l) => {
         const [x, z] = planLocal(b, l.u, l.v, apt.mirrored);
         return <group key={l.room} position={[x, y0 + (realHeights ? l.h : .8), z]} rotation={[0, turn + l.rotationY, 0]} userData={{ deviceId: `${apt.id}.lights` }}>
           <DeviceShell type="light" />
           <mesh geometry={UNIT_BOX} material={lampMat} position={[0, 0, .06]} scale={[.16, .2, .04]} />
-          {immersive && <pointLight ref={(p) => { roomLights.current[i] = p; }} position={[0, 0, .3]} intensity={0} distance={8} decay={2} color="#ffe5b6" />}
         </group>;
       })}
       <group position={at('hvac')} rotation={[0, facing('hvac'), 0]} userData={{ deviceId: `${apt.id}.hvac` }}>
@@ -252,13 +253,12 @@ export function InteriorActuators({ b, apt, immersive = false, realHeights = imm
 }
 
 // ---------------------------------------------------------------- stairwell and building
-function StairwellActuators({ b, cutFloor, roofVisible }: { b: BuildingGeom; cutFloor: number | null; roofVisible: boolean }) {
+function StairwellActuators({ b, floors, roofVisible }: { b: BuildingGeom; floors: number[]; roofVisible: boolean }) {
   const id = `${b.id}-S`;
   const lamps = useEmissive('#fde68a');
   const siren = useEmissive('#ef4444');
   const lid = useRef<THREE.Group>(null);
   const cur = useRef({ lid: 0 });
-  const floors = cutFloor === null ? [] : [cutFloor];
 
   useFrame(({ clock }, dt) => {
     const t = clock.elapsedTime;
@@ -348,13 +348,25 @@ function BuildingDevices({ b, apartments }: { b: BuildingGeom; apartments: Apart
   const floor = useUiStore((s) => s.floor);
   const building = useUiStore((s) => s.building);
   const plan2d = useUiStore((s) => s.mode === '2d');
+  const open = useWalkStore((s) => s.active && s.openBuilding === b.id);
+  if (open && b.supportsPlan) {
+    // First person (V21): every apartment of the open building, at real heights, sashes as glass.
+    return (
+      <group position={[b.center.x, 0, b.center.z]} rotation={[0, b.rotationY, 0]}>
+        {apartments.map((a) => <WindowActuators key={`w${a.id}`} b={b} apt={a} immersive />)}
+        {apartments.map((a) => <InteriorActuators key={`i${a.id}`} b={b} apt={a} realHeights />)}
+        <StairwellActuators b={b} floors={Array.from({ length: b.floors }, (_, f) => f)} roofVisible />
+        <BuildingActuators b={b} />
+      </group>
+    );
+  }
   return (
     <group position={[b.center.x, 0, b.center.z]} rotation={[0, b.rotationY, 0]}>
       {/* Sashes and blinds on solid floors, and on the window openings of the 3D cut (V20). */}
       {b.supportsPlan && apartments.filter((a) => floorMode(a.floor, floor) === 'solid' || (a.floor === floor && !plan2d))
         .map((a) => <WindowActuators key={`w${a.id}`} b={b} apt={a} />)}
       {b.supportsPlan && apartments.filter((a) => floor === a.floor).map((a) => <InteriorActuators key={`i${a.id}`} b={b} apt={a} realHeights={!plan2d} />)}
-      <StairwellActuators b={b} cutFloor={floor} roofVisible={floor === null} />
+      <StairwellActuators b={b} floors={floor === null ? [] : [floor]} roofVisible={floor === null} />
       {(floor === 0 || (floor === null && building === b.id)) && <BuildingActuators b={b} />}
     </group>
   );

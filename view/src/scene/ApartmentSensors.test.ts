@@ -33,14 +33,15 @@ test('no apartment fixtures appear on solid or ghost floors', () => {
   expect(buildSensorBatches(layout, 4).size).toBe(0);
 });
 
-test('first-person sensors use full mounting heights and only the visited apartment', () => {
-  const batches=buildSensorBatches(layout,2,'B-2-2');
+test('first-person sensors cover every apartment of the open building at full mounting heights (V21)', () => {
+  const batches=buildSensorBatches(layout,null,'B');
   expect(batches.size).toBe(12);
   for(const [type,instances] of batches) {
-    expect(instances).toHaveLength(1);
-    expect(instances[0].id).toBe(`B-2-2.${type}`);
+    expect(instances).toHaveLength(8);
+    expect(instances.every((i)=>i.id.startsWith('B-'))).toBe(true);
     const pose=apartmentDevicePose(type,true)!;
-    expect(new THREE.Vector3().setFromMatrixPosition(instances[0].matrix).y).toBeCloseTo(.6+2*3.2+pose.h);
+    const b22=instances.find((i)=>i.id===`B-2-2.${type}`)!;
+    expect(new THREE.Vector3().setFromMatrixPosition(b22.matrix).y).toBeCloseTo(.6+2*3.2+pose.h);
   }
 });
 

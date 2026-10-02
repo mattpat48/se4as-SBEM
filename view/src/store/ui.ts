@@ -4,12 +4,8 @@ import type { HeatQuantity } from '../domain/heat';
 
 interface UiState {
   mode: '3d' | '2d';
-  firstPersonUnit: string | null;
-  walkHeatBefore: boolean;
   showDeviceNames: boolean;
   toggleDeviceNames(): void;
-  enterApartment(id: string, building: string, floor: number): void;
-  exitApartment(): void;
   building: string | null;
   floor: number | null;
   selectedUnit: string | null;
@@ -34,12 +30,8 @@ interface UiState {
 
 export const useUiStore = create<UiState>()((set) => ({
   mode: '3d',
-  firstPersonUnit: null,
-  walkHeatBefore: true,
   showDeviceNames: true,
   toggleDeviceNames: () => set((s) => ({ showDeviceNames: !s.showDeviceNames })),
-  enterApartment: (id, building, floor) => set((s) => ({ firstPersonUnit: id, building, floor, mode: '3d', selectedUnit: null, selectedDevice: null, heatOn: false, walkHeatBefore: s.firstPersonUnit ? s.walkHeatBefore : s.heatOn, debugOpen: false })),
-  exitApartment: () => set((s) => ({ firstPersonUnit: null, heatOn: s.firstPersonUnit ? s.walkHeatBefore : s.heatOn, selectedUnit: null, selectedDevice: null })),
   building: null,
   floor: null,
   selectedUnit: null,
@@ -49,7 +41,7 @@ export const useUiStore = create<UiState>()((set) => ({
   dataMode: false,
   debugOpen: false,
   debugTab: 'commands',
-  setMode: (mode) => set((s) => ({ mode, firstPersonUnit: null, heatOn: s.firstPersonUnit ? s.walkHeatBefore : s.heatOn })),
+  setMode: (mode) => set({ mode }),
   setBuilding: (building) => set({ building }),
   setFloor: (floor) => set({ floor }),
   selectUnit: (selectedUnit) => set({ selectedUnit }),

@@ -28,3 +28,12 @@ test('the entrance is closed during the visit and open in the cut floor, below a
   expect(blocked(cut,2.5)).toBe(true);
   for(const v of [2,8]) expect(cut.some(w=>w.role==='wall'&&Math.abs(10.5-w.u)<w.w/2&&Math.abs(v-w.v)<w.d/2&&1.5>w.y0&&1.5<w.y1)).toBe(true);
 });
+
+test('the french window frames the balcony door with two wooden jambs and no wall (V21)', () => {
+  const walls=interiorShell(2.9,{entryOpen:true});
+  const at=(u:number,role:'wall'|'wood')=>walls.some(w=>w.role===role&&Math.abs(u-w.u)<w.w/2+1e-6&&Math.abs(12-w.v)<w.d/2&&1.2>w.y0&&1.2<w.y1);
+  expect(at(3.2,'wood')).toBe(true);
+  expect(at(4.1,'wood')).toBe(true);
+  expect(at(3.65,'wall')).toBe(false);
+  expect(at(3.65,'wood')).toBe(false);
+});

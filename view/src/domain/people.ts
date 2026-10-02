@@ -31,6 +31,6 @@ const STAIR_MAX = 8;
 /** Spots along the stairs and landings, two per floor from the ground up. */
 export function stairSlots(count: number): { u: number; v: number; floorOffset: number }[] {
   return Array.from({ length: Math.min(Math.max(0, count), STAIR_MAX) }, (_, i) => ({
-    u: i % 2 === 0 ? 12 : 14.2, v: i % 2 === 0 ? 2.0 : 5.6, floorOffset: Math.floor(i / 2),
+    u: i % 2 === 0 ? 14 : 14.2, v: i % 2 === 0 ? 3.2 : 5.6, floorOffset: Math.floor(i / 2),
   }));
 }

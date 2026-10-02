@@ -267,7 +267,7 @@ Metri della pianta: `u` lungo il lato lungo (0…26), `v` in profondità (0 = la
 | Finestre lato 2 (`v` = 0) | 0,8–3,3; 4,8–5,8; 7,8–9,3 |
 
 - **Interno 2:** la stessa pianta **ruotata di 180°** attorno al centro, cioè (`u`, `v`) → (26 − `u`, 12 − `v`).
-- **Vano scale** (`u` 10,5–15,5): scale 11–15 × 0,5–4,5; pianerottolo 10,5–15,5 × 4,5–8,5; ascensore 11–13 × 8,5–10,9; androne 13–15,5 × 8,5–12, aperto verso il lato 1 al piano terra (uscita verso il parco) e verso il lato 2 (ingresso dalla strada). Finestra delle scale sul lato 2 (11,2–14,8) dal 1° piano in su.
+- **Vano scale** (`u` 10,5–15,5): scale 11–15 × 0,5–4,5, **a due rampe** con pianerottolo intermedio (V21: 2 × 9 alzate di `floor_height_m / 18`, salita sulla metà `u` > 13, [specifica V21 §3.1](2026-10-02-prima-persona-mondo-continuo-design.md#31-scala-a-due-rampe-domainstairsts)); pianerottolo 10,5–15,5 × 4,5–8,5; ascensore 11–13 × 8,5–10,9; androne 13–15,5 × 8,5–12, aperto verso il lato 1 al piano terra (uscita verso il parco) e verso il lato 2 (ingresso dalla strada). Finestra delle scale sul lato 2 (11,2–14,8) dal 1° piano in su.
 - **Finestre:** sill 0,9 m e altezza 1,5 m, salvo le portefinestre.
 - **Se il modello ha un numero di appartamenti per piano diverso da 2**, la vista ripiega su blocchi senza stanze, di larghezza uguale, e senza dispositivi installati (solo le etichette).
 - **Muri dello spaccato (V20):** nel piano tagliato in 3D i muri sono **interi**, alti `floor_height_m` − 0,3 (2,9 m), sia negli appartamenti sia nel vano scale. Gli appartamenti usano gli stessi muri della prima persona (`domain/interior.ts`): vani delle finestre con davanzale, architrave e telaio, architravi sopra le porte interne e porta d'ingresso aperta. **In 2D** i muri restano tagliati a 1,1 m, come prima, perché la pianta resti leggibile. Ringhiere dei balconi e piani fantasma non cambiano.
@@ -558,7 +558,7 @@ I campi `layout` sono letti solo da `model.py`, che li pubblica su `Complex/mode
 ## 15. Fase 2 (fuori perimetro, già predisposta)
 - **Strato del manager:** nuovi store e componenti che leggono `Complex/monitored/…`, `Complex/health/…` e gli alert dell'Analyzer, con una timeline "rilevamento → piano → comandi → ack" e la distinzione tra comandi `debug` e `planner`. L'ACL di `view` si estende in lettura.
 - **Persone evacuate nel parco** (V9): nuovo topic retained del simulatore (per esempio `Complex/sim/people`), vietato al manager.
-- **Prima persona** dentro l'appartamento selezionato (V4): la pianta tipo ha già le stanze.
+- ~~**Prima persona** dentro l'appartamento selezionato (V4)~~: fatta prima della fase 2, nel mondo continuo di V21 ([specifica](2026-10-02-prima-persona-mondo-continuo-design.md)).
 - **Scenari e guasti:** dalla UI Streamlit v2 (tappa 4 del Monitor).
 
 ---

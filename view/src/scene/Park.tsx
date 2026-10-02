@@ -4,25 +4,9 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { ComplexLayout, Vec3 } from '../domain/layout';
 import { windSway } from '../domain/effects';
-import { mulberry32 } from '../domain/random';
+import { treeSpecs, type TreeSpec } from '../domain/trees';
 import { readingNow } from './readings';
 import { UNIT_BOX, fixedMat, mat } from './materials';
-
-export interface TreeSpec { x: number; z: number; s: number }
-
-/** 26 park trees from mulberry32(11), away from the centre and the paths, plus street trees. */
-export function treeSpecs(l: ComplexLayout): TreeSpec[] {
-  const { center, width, depth } = l.park;
-  const rnd = mulberry32(11);
-  const out: TreeSpec[] = [];
-  for (let attempts = 0; out.length < 26 && attempts < 500; attempts++) {
-    const e = -27 + rnd() * 54, n = -22 + rnd() * 44, s = 0.75 + rnd() * 0.5;
-    if (Math.abs(e) < 3.5 || Math.abs(n) < 3.5 || Math.hypot(e, n) < 13) continue;
-    out.push({ x: center.x + e * width / 60, z: center.z - n * depth / 50, s });
-  }
-  for (const x of [-75, -60, -40, 40, 60, 75]) out.push({ x, z: -64, s: 1 }, { x, z: 84, s: 1 });
-  return out;
-}
 
 const TRUNK = new THREE.CylinderGeometry(0.18, 0.25, 2.2, 8).translate(0, 1.1, 0);
 const CROWN = new THREE.IcosahedronGeometry(1.9, 1).translate(0, 3.2, 0);

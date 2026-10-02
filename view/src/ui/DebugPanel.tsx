@@ -6,6 +6,7 @@ import { sendClock, useCommandStore, type CommandEntry } from '../store/commands
 import { useLiveStore } from '../store/live';
 import { useModelStore } from '../store/model';
 import { useUiStore } from '../store/ui';
+import { useWalkStore } from '../store/walk';
 
 const STATUS_TEXT: Record<CommandEntry['status'], string> = {
   pending: 'in attesa', ok: 'ok', rejected: 'rifiutato', no_ack: 'nessun ack',
@@ -184,7 +185,7 @@ function ClockTab() {
 }
 
 export function DebugPanel() {
-  const inside = useUiStore((s) => s.firstPersonUnit);
+  const inside = useWalkStore((s) => s.active);
   const open = useUiStore((s) => s.debugOpen);
   const tab = useUiStore((s) => s.debugTab);
   const ui = useUiStore.getState();

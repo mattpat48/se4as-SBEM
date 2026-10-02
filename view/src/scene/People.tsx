@@ -15,6 +15,7 @@ import {
 import { stairTread } from '../domain/stairs';
 import { useLiveStore } from '../store/live';
 import { useUiStore } from '../store/ui';
+import { useWalkStore } from '../store/walk';
 import { planLocal } from './geom';
 import { SLAB_M } from './modelFit';
 import { releaseResident } from './residentRig';
@@ -74,9 +75,11 @@ export function People({ layout }: { layout: ComplexLayout }) {
 
   const wanted = (): Wanted[] => {
     const ui = useUiStore.getState();
+    const walk = useWalkStore.getState();
+    const open = walk.active ? walk.openBuilding : null;
     const readings = useLiveStore.getState().readings;
     const out: Wanted[] = [];
-    if (ui.floor === null && !ui.firstPersonUnit) return out;
+    if (ui.floor === null && !open) return out;
     const put = (bId: string, unitId: string, slot: number, where: Wanted['where'], u: number, v: number, f: number, mirrored: boolean) => {
       const b = byId.get(bId);
       if (!b || out.length >= MAX_PEOPLE) return;
@@ -85,20 +88,23 @@ export function People({ layout }: { layout: ComplexLayout }) {
       const c = Math.cos(b.rotationY), s = Math.sin(b.rotationY);
       out.push({
         key, where, x: b.center.x + lx * c + lz * s, z: b.center.z - lx * s + lz * c,
-        y: PLINTH_M + f * b.floorHeight + (where === 'stairs' ? Math.max(stairTread(u, v), CORE_SLAB_M) : SLAB_M),
+        y: PLINTH_M + f * b.floorHeight + (where === 'stairs' ? Math.max(stairTread(u, v, b.floorHeight), CORE_SLAB_M) : SLAB_M),
         yaw: b.rotationY + (mirrored ? Math.PI : 0) + residentYaw(key, where),
       });
     };
     for (const a of layout.apartments) {
-      if (ui.firstPersonUnit ? a.id !== ui.firstPersonUnit : a.floor !== ui.floor) continue;
+      if (open ? a.building !== open : a.floor !== ui.floor) continue;
       if (!byId.get(a.building)?.supportsPlan) continue;
       const occ = readings.get(`${a.id}.occupancy`)?.last ?? 0;
       peopleSlots(a.id, peopleCount(occ)).forEach((slot, i) => put(a.building, a.id, i, 'home', slot.u, slot.v, a.floor, a.mirrored));
     }
-    if (!ui.firstPersonUnit) for (const b of layout.buildings) {
+    for (const b of layout.buildings) {
+      if (open && b.id !== open) continue;
       const occ = readings.get(`${b.id}-S.occupancy`)?.last ?? 0;
       stairSlots(peopleCount(occ)).forEach((slot, i) => {
-        if (Math.min(slot.floorOffset, b.floors - 1) === ui.floor) put(b.id, `${b.id}-S`, i, 'stairs', slot.u, slot.v, ui.floor, false);
+        // The top floor has no flight of its own (V21): its people walk on the one below.
+        const f = Math.min(slot.floorOffset, Math.max(0, b.floors - 2));
+        if (open || f === ui.floor) put(b.id, `${b.id}-S`, i, 'stairs', slot.u, slot.v, f, false);
       });
     }
     return out;

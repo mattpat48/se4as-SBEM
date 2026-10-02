@@ -4,6 +4,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { apartmentDevicePose } from '../domain/deviceAppearance';
 import { planToWorld, type ComplexLayout } from '../domain/layout';
 import { useUiStore } from '../store/ui';
+import { useWalkStore } from '../store/walk';
 import { fixedMat, mat } from './materials';
 
 type PartRole = 'body' | 'detail' | 'led';
@@ -98,11 +99,11 @@ function SensorBatch({ type, instances }: { type: string; instances: Instance[] 
 }
 
 /** `realHeights`: mounting heights of the first person, also used by the 3D cut with whole walls (V20). */
-export function buildSensorBatches(layout: ComplexLayout, floor: number | null, insideUnit: string | null = null,
-  realHeights = insideUnit !== null): Map<string, Instance[]> {
+export function buildSensorBatches(layout: ComplexLayout, floor: number | null, openBuilding: string | null = null,
+  realHeights = openBuilding !== null): Map<string, Instance[]> {
   const out = new Map<string, Instance[]>();
   for (const apt of layout.apartments) {
-    if (apt.floor !== floor || (insideUnit && apt.id !== insideUnit)) continue;
+    if (openBuilding ? apt.building !== openBuilding : apt.floor !== floor) continue;
     const b = layout.buildings.find((v) => v.id === apt.building)!;
     if (!b.supportsPlan) continue;
     for (const d of layout.devices.values()) {
@@ -120,8 +121,8 @@ export function buildSensorBatches(layout: ComplexLayout, floor: number | null, 
 
 export function ApartmentSensors({ layout }: { layout: ComplexLayout }) {
   const floor = useUiStore((s) => s.floor);
-  const insideUnit = useUiStore((s) => s.firstPersonUnit);
+  const open = useWalkStore((s) => (s.active ? s.openBuilding : null));
   const plan2d = useUiStore((s) => s.mode === '2d');
-  const batches = useMemo(() => buildSensorBatches(layout, floor, insideUnit, insideUnit !== null || !plan2d), [layout, floor, insideUnit, plan2d]);
+  const batches = useMemo(() => buildSensorBatches(layout, floor, open, open !== null || !plan2d), [layout, floor, open, plan2d]);
   return <>{[...batches].map(([type, instances]) => <SensorBatch key={type} type={type} instances={instances} />)}</>;
 }

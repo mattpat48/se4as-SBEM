@@ -9,6 +9,8 @@ import {
 import { buildingMode, floorMode } from '../domain/visibility';
 import { useUiStore } from '../store/ui';
 import type { ThreeEvent } from '@react-three/fiber';
+import { buildingDoors } from '../domain/doors';
+import { Doors } from './Doors';
 import { Floor } from './Floor';
 import { planBox, planLocal, planWall } from './geom';
 import { UNIT_BOX, fixedMat, mat } from './materials';
@@ -97,7 +99,7 @@ function Windows({ b, floors, apartments, stairwellId, faded }: {
 const pvMat = () => fixedMat('pv', () => new THREE.MeshStandardMaterial({ color: '#1e3a8a', roughness: 0.25, metalness: 0.4 }));
 const canopyMat = () => fixedMat('canopy', () => new THREE.MeshStandardMaterial({ color: '#57534e', roughness: 0.7 }));
 
-function Roof({ b, faded }: { b: BuildingGeom; faded: boolean }) {
+export function Roof({ b, faded }: { b: BuildingGeom; faded: boolean }) {
   const ry = PLINTH_M + b.floors * b.floorHeight;
   const edges: [number, number, number, number][] = [[0, 0, PLAN_W, 0], [0, PLAN_D, PLAN_W, PLAN_D], [0, 0, 0, PLAN_D], [PLAN_W, 0, PLAN_W, PLAN_D]];
   const panels = useMemo(() => {
@@ -125,6 +127,24 @@ function Roof({ b, faded }: { b: BuildingGeom; faded: boolean }) {
   );
 }
 
+/** Three steps up the plinth to the park portone (the walker's feet follow a ramp, V21). */
+export function PortoneSteps({ b, faded = false }: { b: BuildingGeom; faded?: boolean }) {
+  return (
+    <group>
+      {[0.7, 0.47, 0.23].map((top, i) => (
+        <mesh key={i} geometry={UNIT_BOX} material={mat('plinth', faded)} castShadow receiveShadow
+          {...planBox(b, { u0: 13.1, u1: 15.4, v0: PLAN_D + i * 0.4, v1: PLAN_D + (i + 1) * 0.4 }, 0, top)} />
+      ))}
+    </group>
+  );
+}
+
+/** Canopy over the park exit of the androne. */
+export function Canopy({ b }: { b: BuildingGeom }) {
+  return <mesh geometry={UNIT_BOX} material={canopyMat()}
+    {...planBox(b, { u0: ANDRONE.u0 - 0.3, u1: ANDRONE.u1 + 0.3, v0: PLAN_D, v1: PLAN_D + 1.6 }, PLINTH_M + 2.7, 0.15)} castShadow />;
+}
+
 export function Building({ b, apartments }: { b: BuildingGeom; apartments: ApartmentGeom[] }) {
   const selectedFloor = useUiStore((s) => s.floor);
   const selectedBuilding = useUiStore((s) => s.building);
@@ -133,6 +153,7 @@ export function Building({ b, apartments }: { b: BuildingGeom; apartments: Apart
   const solidKey = floors.filter((f) => floorMode(f, selectedFloor) === 'solid').join(',');
   const solidFloors = useMemo(() => (solidKey === '' ? [] : solidKey.split(',').map(Number)), [solidKey]);
   const stairwellId = `${b.id}-S`;
+  const portoni = useMemo(() => buildingDoors(b, apartments).filter((d) => d.kind === 'portone'), [b, apartments]);
 
   return (
     <group position={[b.center.x, 0, b.center.z]} rotation={[0, b.rotationY, 0]} userData={{ buildingId: b.id }}
@@ -145,8 +166,9 @@ export function Building({ b, apartments }: { b: BuildingGeom; apartments: Apart
       ))}
       <Windows b={b} floors={solidFloors} apartments={apartments} stairwellId={stairwellId} faded={faded} />
       {selectedFloor === null && <group userData={{ unitId: b.id }}><Roof b={b} faded={faded} /></group>}
-      <mesh geometry={UNIT_BOX} material={canopyMat()}
-        {...planBox(b, { u0: ANDRONE.u0 - 0.3, u1: ANDRONE.u1 + 0.3, v0: PLAN_D, v1: PLAN_D + 1.6 }, PLINTH_M + 2.7, 0.15)} castShadow />
+      <Canopy b={b} />
+      {b.supportsPlan && <PortoneSteps b={b} faded={faded} />}
+      <Doors b={b} doors={portoni} />
     </group>
   );
 }

@@ -1,4 +1,4 @@
-import { ENTRY_DOOR, INTERIOR_WALLS, WINDOWS } from './plan';
+import { BALCONY_DOOR, ENTRY_DOOR, INTERIOR_WALLS, WINDOWS } from './plan';
 export const DOOR_OPENINGS = [
   {u0:4.5,u1:5.4,v:6.5}, {u0:8,u1:8.9,v:6.5}, {u0:2.8,u1:3.7,v:4.5}, {u0:4.8,u1:5.7,v:3}, {u0:7.5,u1:8.4,v:3},
 ];
@@ -32,6 +32,8 @@ export function interiorShell(ceiling:number,{entryOpen=false}:{entryOpen?:boole
       for(const u of [w.u0,w.u1]) wall(u,v,u,v,Math.max(.12,sill),top,'wood',.05);
       wall(w.u0,v,w.u1,v,Math.max(.12,sill),Math.max(.12,sill)+.045,'wood',.05);
       wall(w.u0,v,w.u1,v,top-.045,top,'wood',.05);
+      // The balcony door (V21) is a bay of the french window, between two jambs.
+      if(w.tall) for(const u of [BALCONY_DOOR.u0,BALCONY_DOOR.u1]) wall(u,v,u,v,.12,top,'wood',.05);
       start=w.u1;
     }
     wall(start,v,10.5,v);

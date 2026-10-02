@@ -4,8 +4,7 @@ import { Canvas } from '@react-three/fiber';
 import { Suspense, useState } from 'react';
 import * as THREE from 'three';
 import type { ComplexLayout } from '../domain/layout';
-import { useUiStore } from '../store/ui';
-import { ApartmentInterior } from './ApartmentInterior';
+import { useWalkStore } from '../store/walk';
 import { CameraRig } from './CameraRig';
 import { Complex } from './Complex';
 import { Furniture } from './Furniture';
@@ -19,8 +18,9 @@ import { People } from './People';
 import { Weather } from './Weather';
 
 export function Viewport({ layout }: { layout: ComplexLayout }) {
-  const inside = useUiStore((s) => s.firstPersonUnit);
-  const apt = layout.apartments.find((a) => a.id === inside);
+  const walking = useWalkStore((s) => s.active);
+  // Rain only reaches the walker outdoors or on a balcony (V21).
+  const sheltered = useWalkStore((s) => s.active && (s.place.kind === 'apartment' || s.place.kind === 'stairwell'));
   const [dpr, setDpr] = useState(Math.min(2, window.devicePixelRatio || 1));
   return (
     <Canvas
@@ -31,16 +31,16 @@ export function Viewport({ layout }: { layout: ComplexLayout }) {
       <PerformanceMonitor onDecline={() => setDpr((d) => Math.max(1, d - 0.5))} onIncline={() => setDpr((d) => Math.min(2, d + 0.25))} />
       <CameraRig layout={layout} />
       <Lighting />
-      {apt ? <ApartmentInterior layout={layout} apt={apt}/> : <Complex layout={layout} />}
+      <Complex layout={layout} />
       <HeatPainter layout={layout} />
       {/* External models load in the background, each layer on its own: the rest of the scene
           neither waits for them nor fails with them. */}
       <ModelBoundary name="arredi"><Suspense fallback={null}><Furniture layout={layout} /></Suspense></ModelBoundary>
       <ModelBoundary name="residenti"><Suspense fallback={null}><People layout={layout} /></Suspense></ModelBoundary>
       <Hazards layout={layout} />
-      {!apt && <Weather />}
-      {!apt && <Labels layout={layout} />}
-      {!apt && <MinimapPass />}
+      <group visible={!sheltered}><Weather /></group>
+      {!walking && <Labels layout={layout} />}
+      {!walking && <MinimapPass />}
     </Canvas>
   );
 }

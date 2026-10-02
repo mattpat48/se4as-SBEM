@@ -56,6 +56,8 @@ export const LANDING: PlanRect = { u0: 10.5, u1: 15.5, v0: 4.5, v1: 8.5 };
 export const LIFT: PlanRect = { u0: 11, u1: 13, v0: 8.5, v1: 10.9 };
 export const ANDRONE: PlanRect = { u0: 13, u1: 15.5, v0: 8.5, v1: 12 };
 export const ENTRY_DOOR = { u: 10.5, v0: 4.6, v1: 5.6 };
+/** The leaf of the french window (V21): the rest of the opening keeps the `window` sashes. */
+export const BALCONY_DOOR = { u0: 3.2, u1: 4.1 };
 
 export function mirror(u: number, v: number): [number, number] {
   return [PLAN_W - u, PLAN_D - v];

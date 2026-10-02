@@ -4,6 +4,7 @@ import { buildComplexLayout, type ComplexLayout } from '../domain/layout';
 import type { ComplexModelMsg } from '../domain/messages';
 import { useLiveStore } from './live';
 import { useUiStore } from './ui';
+import { useWalkStore } from './walk';
 
 export interface DeviceInfo { deviceId: string; unitId: string; area: string; type: string; kind: 'sensor' | 'actuator' }
 
@@ -40,7 +41,7 @@ export const useModelStore = create<ModelState>()((set) => ({
     if (json === currentJson && useModelStore.getState().model !== null) return;
     currentJson = json;
     useLiveStore.getState().resetLive();
-    useUiStore.getState().exitApartment();
+    useWalkStore.getState().exit();
     useUiStore.getState().clearSelection();
     const layout = buildComplexLayout(m);
     for (const w of layout.warnings) console.warn(w);
