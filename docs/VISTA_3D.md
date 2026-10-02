@@ -6,7 +6,7 @@ Questo file traccia **cosa deve fare** la vista 3D del complesso residenziale, *
 
 **Specifica tecnica della fase 1:** [`docs/superpowers/specs/2026-09-30-vista-3d-design.md`](superpowers/specs/2026-09-30-vista-3d-design.md). È il riferimento ufficiale per nomi, misure, soglie e tappe: se questo file e la specifica non coincidono, **vale la specifica**.
 
-**Ultimo aggiornamento:** 2026-10-01
+**Ultimo aggiornamento:** 2026-10-02
 
 ---
 
@@ -28,6 +28,7 @@ Questo file traccia **cosa deve fare** la vista 3D del complesso residenziale, *
 | **Topic che la vista può leggere e scrivere** (utente MQTT `view`, ACL) | [Specifica della vista, §5](superpowers/specs/2026-09-30-vista-3d-design.md#5-broker-e-sicurezza); file `mosquitto/config/aclfile` | ✅ T1 |
 | **Come avviarla** | Sezione 3.1: `docker compose up -d --build mosquitto simulator view`, poi http://localhost:8080 (senza Node-RED, che inoltra a Telegram) | ✅ T1 |
 | **Copione della demo** | [Specifica della vista, §13](superpowers/specs/2026-09-30-vista-3d-design.md#13-copione-della-demo-fase-1-circa-4-minuti); provato il 2026-10-01 (sezione 3.2) | ✅ T6 |
+| **Arredi e residenti 3D** (modelli esterni CC0, V20) | Modelli in `view/public/models/` (`furniture/`, `people/`); fonti e licenze in [`view/public/models/CREDITS.md`](../view/public/models/CREDITS.md); si rigenerano con `scripts/build-models.sh`. Tabella ingombro → modello in `view/src/domain/furnitureModels.ts`, adattamento in `view/src/scene/modelFit.ts`, residenti in `view/src/domain/residents.ts` e `view/src/scene/People.tsx` | ✅ V20 |
 | Prototipo usa e getta dei tre stili (solo riferimento visivo) | `.superpowers/brainstorm/…/content/stile-3d-v2.html` (non versionato) | — |
 | Codice della vista 3D | Cartella `view/` (test accanto ai moduli, `npm test`; prova end-to-end in `scripts/e2e_view.py`) | ✅ T1 |
 
@@ -66,7 +67,7 @@ La vista è **solo una vista**: nessuna logica di simulazione al suo interno. Le
 | V18 | 2026-09-30 | **Sei tappe** (sezione 3) e **copione della demo** della fase 1 di circa 4 minuti (specifica §13) | Ogni tappa ha un risultato verificabile; il pannello di debug arriva presto (T3) per provare gli attuatori nelle tappe successive |
 
 | V19 | 2026-10-01 | **Arredi di base e dispositivi realistici come scenografia**: geometrie procedurali, arredi solo sul piano tagliato, interni ruotati di 180°, ingombri e passaggi verificati con test. Sensori con forme dedicate e LED di famiglia; animazioni e identificatori dei dispositivi conservati | Eccezione esplicita a V7 («niente decorazioni senza dati») per migliorare l’immersione nella demo: la scenografia non rappresenta nuovi dati né decide azioni. Meno del 40% del pavimento di ogni stanza è coperto; la mappa di calore resta leggibile. Quattro geometrie unite per appartamento, materiali condivisi giorno/notte/dati, nessuna luce aggiuntiva |
-| V20 | 2026-10-02 | **Modelli 3D esterni per arredi e persone** (supera la parte di V0 "nessun modello 3D esterno" e le geometrie procedurali di V19): **arredi Kenney Furniture Kit** (CC0) adattati agli ingombri già definiti in `domain/furniture.ts`; **residenti Quaternius "Ultimate Modular"** già vestiti (CC0), animati. Nello spaccato i **muri restano interi** (circa 2,9 m) invece che tagliati a 1,1 m. **Pavimento in legno** di base; con la mappa di calore attiva il pavimento prende il colore del dato. La caldaia resta disegnata a codice (il pacchetto non la contiene) | Prova usa e getta del 2026-10-02: aspetto molto migliore delle forme procedurali, stile low-poly coerente tra arredi e persone, licenze CC0 verificate nei file dei pacchetti. I personaggi base Quaternius "Universal" sono stati scartati perché privi di vestiti (gli abiti abbinati sono solo fantasy) |
+| V20 | 2026-10-02 | **Modelli 3D esterni per arredi e persone** (supera la parte di V0 "nessun modello 3D esterno" e le geometrie procedurali di V19): **arredi Kenney Furniture Kit** (CC0) adattati agli ingombri già definiti in `domain/furniture.ts`; **residenti Quaternius "Ultimate Modular"** già vestiti (CC0), animati. Nello spaccato i **muri restano interi** (circa 2,9 m) invece che tagliati a 1,1 m. **Pavimento in legno** di base; con la mappa di calore attiva il pavimento prende il colore del dato. La caldaia resta disegnata a codice (il pacchetto non la contiene) | Prova usa e getta del 2026-10-02: aspetto molto migliore delle forme procedurali, stile low-poly coerente tra arredi e persone, licenze CC0 verificate nei file dei pacchetti. I personaggi base Quaternius "Universal" sono stati scartati perché privi di vestiti (gli abiti abbinati sono solo fantasy). ✅ **Implementata il 2026-10-02** (sezione 3.2). Dettagli decisi durante l'implementazione: 8 personaggi, 4 donne e 4 uomini ("Ultimate Modular Males", CC0); nello spaccato i muri di casa sono quelli della prima persona, con vani finestra e porte, e ante e tapparelle si vedono anche lì; i dispositivi stanno alle quote reali; la planimetria 2D resta com'era (muri a 1,1 m, dispositivi bassi) |
 
 ---
 
@@ -119,7 +120,22 @@ docker exec iot_mosquitto mosquitto_pub -u admin -P adminpassword123 -t Complex/
 
 Ripercorsa il 2026-10-01 nel browser (container su :8080 e server di sviluppo su :5173), insieme al copione della demo (specifica §13). ✅ = visto; ☐ = da ricontrollare a occhio alla prossima prova.
 
-**Arredi e dispositivi realistici (V19)**
+**Modelli esterni, muri interi e pavimento in legno (V20)**
+
+- [x] Palazzo A, piano 2 (3D): arredi Kenney nei due interni, cucina in 5 pezzi, TV sul mobile, caldaia a codice; residenti animati, diversi per appartamento e posto
+- [x] Muri interi a 2,9 m con vani finestra (portafinestra sul balcone), porte interne con architrave e ingresso aperto; vano scale con muri interi
+- [x] Pavimento: legno a mappa di calore spenta; legno tinto del colore del dato a mappa accesa, con la venatura visibile
+- [x] Dispositivi alle quote reali nello spaccato 3D (termostato e CO₂ a 1,5 m, split a 2,4 m)
+- [x] Prima persona dentro A-2-1: arredi, pavimento in legno e residente animato
+- [x] Planimetria 2D: muri a 1,1 m come prima, arredi visti dall'alto
+- [x] Modalità dati: arredi con materiale neutro, colore solo sul pavimento
+- [x] Vano scale: residenti che salgono la rampa, in piedi sui gradini
+- [x] Prestazioni (browser integrato, 800 × 1023 px, dpr 2): circa 100 fps con il piano 2 tagliato e 8 residenti; 52 fps con 80 residenti, il limite (occupazione alzata solo nel browser)
+- [x] Peso al primo caricamento: 34 file, circa 2,4 MB (arredi 454 KB, personaggi 1,98 MB); container `view` ricostruito e verificato
+- [x] Notte alle 22:00 (orologio forzato solo nel browser): arredi leggibili con la tenue emissione della palette, pavimento del colore del dato; i residenti restano sagome scure
+- [ ] Incendio con i nuovi arredi e muri interi: non riprovato
+
+**Arredi e dispositivi realistici (V19)** (superati da V20: arredi procedurali e muri a 1,1 m)
 
 - [x] Palazzo A, Piano 2: cucina, divano, pranzo con quattro sedie, camere, bagni e ingresso arredati nei due interni, ruotati di 180°; arredi da balcone dal primo piano
 - [x] Planimetria 2D (`2`): disposizione leggibile dall’alto e passaggi liberi; i test controllano anche i dodici posti delle persone
@@ -219,3 +235,4 @@ I dispositivi mantengono il contratto di `placement.ts`: soltanto la resa dello 
 | 2026-10-01 | Tappa T6 completata: guida d'avvio e verifica a vista (sezioni 3.1–3.2), README e `MONITOR.md` aggiornati, copione della demo provato da capo a fondo; fase 1 disponibile |
 | 2026-10-01 | V19: arredi procedurali sul piano tagliato e dispositivi realistici, con palette giorno/notte/dati e selezione preservata; TDD su ingombri, passaggi, persone, superficie libera, altezze reali delle geometrie e sensori nei quattro palazzi. Verifica 2D/3D e misura FPS locale; 122 test, controllo TypeScript e build superati |
 | 2026-10-02 | Prova usa e getta di modelli esterni; decisione V20: arredi Kenney, residenti Quaternius vestiti, muri interi nello spaccato, pavimento in legno o colore della mappa di calore |
+| 2026-10-02 | V20 implementata con TDD: asset in `view/public/models/` (26 arredi Kenney e 8 personaggi Quaternius, 4 donne e 4 uomini, compressi con meshopt) e `scripts/build-models.sh`. Arredi istanziati e adattati con scala uniforme; residenti animati (al massimo 80); muri interi con vani finestra nello spaccato 3D; dispositivi alle quote reali; pavimento in legno generato a codice; 2D invariata. Eliminate le geometrie procedurali di arredi e persone. 154 test, controllo TypeScript, build e immagine Docker superati |

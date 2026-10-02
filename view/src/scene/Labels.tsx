@@ -36,6 +36,7 @@ function deviceText(d: DevicePlacement, now: number, period: number, types: Reco
 export function Labels({ layout }: { layout: ComplexLayout }) {
   const model = useModelStore((s) => s.model)!;
   const types = model.device_types as Record<string, SensorType>;
+  const plan2d = useUiStore((s) => s.mode === '2d');
   const [items, setItems] = useState<LabelItem[]>([]);
   const acc = useRef(REFRESH_S);
   const frustum = useMemo(() => new THREE.Frustum(), []);
@@ -54,12 +55,12 @@ export function Labels({ layout }: { layout: ComplexLayout }) {
       if (!b.supportsPlan) continue;
       for (const d of layout.devices.values()) {
         if (d.unitId !== a.id) continue;
-        const p = apartmentDevicePose(d.type);
+        const p = apartmentDevicePose(d.type, !plan2d);
         if (p) out.set(d.deviceId, planToWorld(b, p.u, p.v, p.h + .18, a.floor, a.mirrored));
       }
     }
     return out;
-  }, [layout, byId]);
+  }, [layout, byId, plan2d]);
   const devicesByUnit = useMemo(() => {
     const out = new Map<string, DevicePlacement[]>();
     for (const d of layout.devices.values()) if (d.position) out.set(d.unitId, [...(out.get(d.unitId) ?? []), d]);

@@ -97,7 +97,9 @@ function SensorBatch({ type, instances }: { type: string; instances: Instance[] 
   ))}</>;
 }
 
-export function buildSensorBatches(layout: ComplexLayout, floor: number | null, insideUnit: string | null = null): Map<string, Instance[]> {
+/** `realHeights`: mounting heights of the first person, also used by the 3D cut with whole walls (V20). */
+export function buildSensorBatches(layout: ComplexLayout, floor: number | null, insideUnit: string | null = null,
+  realHeights = insideUnit !== null): Map<string, Instance[]> {
   const out = new Map<string, Instance[]>();
   for (const apt of layout.apartments) {
     if (apt.floor !== floor || (insideUnit && apt.id !== insideUnit)) continue;
@@ -105,7 +107,7 @@ export function buildSensorBatches(layout: ComplexLayout, floor: number | null, 
     if (!b.supportsPlan) continue;
     for (const d of layout.devices.values()) {
       if (d.unitId !== apt.id || d.kind !== 'sensor') continue;
-      const pose = apartmentDevicePose(d.type, insideUnit !== null);
+      const pose = apartmentDevicePose(d.type, realHeights);
       if (!pose) continue;
       const p = planToWorld(b, pose.u, pose.v, pose.h, apt.floor, apt.mirrored);
       const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), b.rotationY + pose.rotationY + (apt.mirrored ? Math.PI : 0));
@@ -119,6 +121,7 @@ export function buildSensorBatches(layout: ComplexLayout, floor: number | null, 
 export function ApartmentSensors({ layout }: { layout: ComplexLayout }) {
   const floor = useUiStore((s) => s.floor);
   const insideUnit = useUiStore((s) => s.firstPersonUnit);
-  const batches = useMemo(() => buildSensorBatches(layout, floor, insideUnit), [layout, floor, insideUnit]);
+  const plan2d = useUiStore((s) => s.mode === '2d');
+  const batches = useMemo(() => buildSensorBatches(layout, floor, insideUnit, insideUnit !== null || !plan2d), [layout, floor, insideUnit, plan2d]);
   return <>{[...batches].map(([type, instances]) => <SensorBatch key={type} type={type} instances={instances} />)}</>;
 }

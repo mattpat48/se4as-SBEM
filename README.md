@@ -61,6 +61,8 @@ poi apri http://localhost:8080. **Non avviare Node-RED** (né l'intero stack) me
 
 Il browser si collega a Mosquitto via WebSocket (porta 9001) con l'utente `view`, che ha permessi minimi (ACL in `mosquitto/config/aclfile`; credenziali in `.env`). Comandi da tastiera, test, verifica a vista e copione della demo sono in [`docs/VISTA_3D.md`](docs/VISTA_3D.md).
 
+**Crediti dei modelli 3D** (pubblico dominio, CC0 1.0): arredi dal [Furniture Kit](https://kenney.nl/assets/furniture-kit) di Kenney; residenti da [Ultimate Modular Women](https://quaternius.com/packs/ultimatemodularwomen.html) e [Ultimate Modular Males](https://quaternius.com/packs/ultimatemodularcharacters.html) di Quaternius. Dettagli e modifiche in [`view/public/models/CREDITS.md`](view/public/models/CREDITS.md); si rigenerano con `scripts/build-models.sh`.
+
 
 
 To watch the logs of the singles containers, simply type:

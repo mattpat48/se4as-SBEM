@@ -1,64 +1,136 @@
-// People silhouettes (view spec §7.5): apartments of the cut floor from `occupancy`, and the
-// stairwell's people on its stairs. Only with a cut floor (always the case in 2D).
+// Residents (view spec §7.5, decision V20): animated Quaternius characters (CC0) in the apartments
+// of the cut floor from `occupancy`, and the stairwell's people walking on its stairs. Only with a
+// cut floor (always the case in 2D) or inside an apartment in first person.
+import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { ComplexLayout } from '../domain/layout';
 import { peopleCount, peopleSlots, stairSlots } from '../domain/people';
 import { PLINTH_M } from '../domain/plan';
+import {
+  RESIDENT_MODELS, residentClip, residentHeight, residentKey, residentModelUrl, residentVariant, residentYaw,
+} from '../domain/residents';
+import { stairTread } from '../domain/stairs';
 import { useLiveStore } from '../store/live';
 import { useUiStore } from '../store/ui';
 import { planLocal } from './geom';
-import { fixedMat } from './materials';
-import { personGeometry } from './personGeometry';
+import { SLAB_M } from './modelFit';
 
-const MAX_PEOPLE = 400;
+const MAX_PEOPLE = 80;
 const REFRESH_S = 0.5;
+const CORE_SLAB_M = 0.1;
+const URLS = RESIDENT_MODELS.map(residentModelUrl);
+useGLTF.preload(URLS, false);   // same key as the useGLTF(URLS) call below
+
+interface Resident { root: THREE.Group; mixer: THREE.AnimationMixer }
+interface Wanted { key: string; where: 'home' | 'stairs'; x: number; y: number; z: number; yaw: number }
+
+/** Height of a character standing in its idle pose, in file units. */
+function standingHeight(gltf: { scene: THREE.Object3D; animations: THREE.AnimationClip[] }): number {
+  const model = cloneSkinned(gltf.scene);
+  const mixer = new THREE.AnimationMixer(model);
+  mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, 'Idle')!).play();
+  mixer.update(0);
+  model.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(model, true);
+  mixer.uncacheRoot(model);
+  return box.max.y - box.min.y;
+}
 
 export function People({ layout }: { layout: ComplexLayout }) {
-  const geometry = useMemo(personGeometry, []);
-  useLayoutEffect(() => () => geometry.dispose(), [geometry]);
-  const mesh = useRef<THREE.InstancedMesh>(null);
+  const gltfs = useGLTF(URLS, false);
+  const heights = useMemo(() => gltfs.map(standingHeight), [gltfs]);
+  const group = useRef<THREE.Group>(null);
+  const residents = useRef(new Map<string, Resident>());
   const acc = useRef(REFRESH_S);
   const byId = useMemo(() => new Map(layout.buildings.map((b) => [b.id, b])), [layout]);
-  const tmp = useMemo(() => ({ m: new THREE.Matrix4(), q: new THREE.Quaternion(), p: new THREE.Vector3(), s: new THREE.Vector3(1, 1, 1) }), []);
+  const view = useMemo(() => ({ frustum: new THREE.Frustum(), m: new THREE.Matrix4(), sphere: new THREE.Sphere(new THREE.Vector3(), 1.2) }), []);
 
-  useFrame((_, dt) => {
-    acc.current += dt;
-    if (acc.current < REFRESH_S || !mesh.current) return;
-    acc.current = 0;
-    const floor = useUiStore.getState().floor;
+  const spawn = (w: Wanted): Resident => {
+    const variant = residentVariant(w.key);
+    const gltf = gltfs[variant];
+    const model = cloneSkinned(gltf.scene);
+    model.traverse((o) => { if ((o as THREE.Mesh).isMesh) o.castShadow = true; });
+    const root = new THREE.Group();
+    root.add(model);
+    root.scale.setScalar(residentHeight(w.key) / heights[variant]);
+    const mixer = new THREE.AnimationMixer(model);
+    const clip = THREE.AnimationClip.findByName(gltf.animations, residentClip(w.key, w.where))!;
+    const action = mixer.clipAction(clip);
+    action.play();
+    action.time = Math.random() * clip.duration;             // residents do not move in step
+    mixer.update(0);
+    return { root, mixer };
+  };
+
+  const remove = (key: string, r: Resident) => {
+    r.mixer.stopAllAction();
+    r.mixer.uncacheRoot(r.root.children[0]);
+    group.current?.remove(r.root);
+    residents.current.delete(key);
+  };
+
+  const wanted = (): Wanted[] => {
+    const ui = useUiStore.getState();
     const readings = useLiveStore.getState().readings;
-    let n = 0;
-    const put = (bId: string, u: number, v: number, f: number, mirrored: boolean) => {
+    const out: Wanted[] = [];
+    if (ui.floor === null && !ui.firstPersonUnit) return out;
+    const put = (bId: string, unitId: string, slot: number, where: Wanted['where'], u: number, v: number, f: number, mirrored: boolean) => {
       const b = byId.get(bId);
-      if (!b || n >= MAX_PEOPLE) return;
+      if (!b || out.length >= MAX_PEOPLE) return;
+      const key = residentKey(unitId, slot);
       const [lx, lz] = planLocal(b, u, v, mirrored);
       const c = Math.cos(b.rotationY), s = Math.sin(b.rotationY);
-      tmp.p.set(b.center.x + lx * c + lz * s, PLINTH_M + f * b.floorHeight + .12, b.center.z - lx * s + lz * c);
-      tmp.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), b.rotationY + (mirrored ? Math.PI : 0));
-      mesh.current!.setMatrixAt(n++, tmp.m.compose(tmp.p, tmp.q, tmp.s));
+      out.push({
+        key, where, x: b.center.x + lx * c + lz * s, z: b.center.z - lx * s + lz * c,
+        y: PLINTH_M + f * b.floorHeight + (where === 'stairs' ? Math.max(stairTread(u, v), CORE_SLAB_M) : SLAB_M),
+        yaw: b.rotationY + (mirrored ? Math.PI : 0) + residentYaw(key, where),
+      });
     };
-    if (floor !== null) {
-      for (const a of layout.apartments) {
-        if (useUiStore.getState().firstPersonUnit && a.id !== useUiStore.getState().firstPersonUnit) continue;
-        if (a.floor !== floor || !byId.get(a.building)?.supportsPlan) continue;
-        const occ = readings.get(`${a.id}.occupancy`)?.last ?? 0;
-        for (const slot of peopleSlots(a.id, peopleCount(occ))) put(a.building, slot.u, slot.v, a.floor, a.mirrored);
-      }
-      for (const b of useUiStore.getState().firstPersonUnit ? [] : layout.buildings) {
-        const occ = readings.get(`${b.id}-S.occupancy`)?.last ?? 0;
-        for (const slot of stairSlots(peopleCount(occ))) {
-          if (Math.min(slot.floorOffset, b.floors - 1) === floor) put(b.id, slot.u, slot.v, floor, false);
+    for (const a of layout.apartments) {
+      if (ui.firstPersonUnit ? a.id !== ui.firstPersonUnit : a.floor !== ui.floor) continue;
+      if (!byId.get(a.building)?.supportsPlan) continue;
+      const occ = readings.get(`${a.id}.occupancy`)?.last ?? 0;
+      peopleSlots(a.id, peopleCount(occ)).forEach((slot, i) => put(a.building, a.id, i, 'home', slot.u, slot.v, a.floor, a.mirrored));
+    }
+    if (!ui.firstPersonUnit) for (const b of layout.buildings) {
+      const occ = readings.get(`${b.id}-S.occupancy`)?.last ?? 0;
+      stairSlots(peopleCount(occ)).forEach((slot, i) => {
+        if (Math.min(slot.floorOffset, b.floors - 1) === ui.floor) put(b.id, `${b.id}-S`, i, 'stairs', slot.u, slot.v, ui.floor, false);
+      });
+    }
+    return out;
+  };
+
+  useFrame(({ camera }, dt) => {
+    const g = group.current;
+    if (!g) return;
+    acc.current += dt;
+    if (acc.current >= REFRESH_S) {
+      acc.current = 0;
+      const next = wanted();
+      const keep = new Set(next.map((w) => w.key));
+      for (const [key, r] of residents.current) if (!keep.has(key)) remove(key, r);
+      for (const w of next) {
+        let r = residents.current.get(w.key);
+        if (!r) {
+          r = spawn(w);
+          residents.current.set(w.key, r);
+          g.add(r.root);
         }
+        r.root.position.set(w.x, w.y, w.z);
+        r.root.rotation.y = w.yaw;
       }
     }
-    mesh.current.count = n;
-    mesh.current.instanceMatrix.needsUpdate = true;
+    // Animate only the residents in view.
+    view.frustum.setFromProjectionMatrix(view.m.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+    for (const r of residents.current.values()) {
+      view.sphere.center.copy(r.root.position).y += 0.9;
+      if (view.frustum.intersectsSphere(view.sphere)) r.mixer.update(dt);
+    }
   });
 
-  return (
-    <instancedMesh ref={mesh} args={[geometry, fixedMat('resident', () => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, emissive: '#283b48', emissiveIntensity: .12 })), MAX_PEOPLE]}
-      dispose={null} castShadow frustumCulled={false} />
-  );
+  return <group ref={group} />;
 }

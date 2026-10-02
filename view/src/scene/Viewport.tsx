@@ -1,13 +1,14 @@
 // The 3D canvas: renderer settings, adaptive resolution, camera rig, scene, minimap pass.
 import { PerformanceMonitor } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import * as THREE from 'three';
 import type { ComplexLayout } from '../domain/layout';
 import { useUiStore } from '../store/ui';
 import { ApartmentInterior } from './ApartmentInterior';
 import { CameraRig } from './CameraRig';
 import { Complex } from './Complex';
+import { Furniture } from './Furniture';
 import { Hazards } from './Hazards';
 import { HeatPainter } from './HeatPainter';
 import { Labels } from './Labels';
@@ -31,7 +32,11 @@ export function Viewport({ layout }: { layout: ComplexLayout }) {
       <Lighting />
       {apt ? <ApartmentInterior layout={layout} apt={apt}/> : <Complex layout={layout} />}
       <HeatPainter layout={layout} />
-      <People layout={layout} />
+      {/* External models load in the background; the rest of the scene does not wait for them. */}
+      <Suspense fallback={null}>
+        <Furniture layout={layout} />
+        <People layout={layout} />
+      </Suspense>
       <Hazards layout={layout} />
       {!apt && <Weather />}
       {!apt && <Labels layout={layout} />}

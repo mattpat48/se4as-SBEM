@@ -5,12 +5,15 @@ import type { ApartmentGeom, BuildingGeom } from '../domain/layout';
 import {
   BALCONY, CORE, CUT_WALL_M, INTERIOR_WALLS, LIFT, PLAN_D, PLAN_W, PLINTH_M, STAIRS, type PlanRect,
 } from '../domain/plan';
+import { wallHeight } from '../domain/interior';
+import { STAIR_RISE_M, STAIR_STEPS } from '../domain/stairs';
 import type { FloorMode } from '../domain/visibility';
+import { useUiStore } from '../store/ui';
 import { planBox, planWall } from './geom';
 import { DAY } from '../domain/palette';
 import { TWIN_EDGES, UNIT_BOX, UNIT_BOX_EDGES, fixedMat, mat } from './materials';
+import { InteriorWalls } from './InteriorWalls';
 import { registerUnit, unregisterUnit } from './registry';
-import { Furniture } from './Furniture';
 
 const APT1: PlanRect = { u0: 0, u1: 10.5, v0: 0, v1: PLAN_D };
 const APT1_PERIMETER: [number, number, number, number][] = [
@@ -88,13 +91,12 @@ function Balcony({ b, y0, mirrored, faded, patio }: { b: BuildingGeom; y0: numbe
 }
 
 function Stairs({ b, y0 }: { b: BuildingGeom; y0: number }) {
-  const steps = 9;
-  const depth = (STAIRS.v1 - STAIRS.v0) / steps;
+  const depth = (STAIRS.v1 - STAIRS.v0) / STAIR_STEPS;
   return (
     <group>
-      {Array.from({ length: steps }, (_, i) => {
+      {Array.from({ length: STAIR_STEPS }, (_, i) => {
         const r = { u0: STAIRS.u0, u1: STAIRS.u1, v0: STAIRS.v1 - (i + 1) * depth, v1: STAIRS.v1 - i * depth };
-        return <mesh key={i} geometry={UNIT_BOX} material={mat('slab')} {...planBox(b, r, y0, 0.18 * (i + 1))} castShadow receiveShadow />;
+        return <mesh key={i} geometry={UNIT_BOX} material={mat('slab')} {...planBox(b, r, y0, STAIR_RISE_M * (i + 1))} castShadow receiveShadow />;
       })}
       <mesh geometry={UNIT_BOX} material={liftMat()} {...planBox(b, LIFT, y0, 2.2)} castShadow />
     </group>
@@ -104,6 +106,9 @@ function Stairs({ b, y0 }: { b: BuildingGeom; y0: number }) {
 export function Floor({ b, floor, mode, apartments, faded, stairwellId }: FloorProps) {
   const y0 = PLINTH_M + floor * b.floorHeight;
   const fh = b.floorHeight;
+  // Whole walls in the 3D cut (V20); the 2D plan keeps its low cut, as before.
+  const plan2d = useUiStore((s) => s.mode === '2d');
+  const wallH = plan2d ? CUT_WALL_M : wallHeight(fh);
   const feet = footprints(b, apartments);
 
   if (mode === 'ghost') {
@@ -124,14 +129,17 @@ export function Floor({ b, floor, mode, apartments, faded, stairwellId }: FloorP
         ))}
         {b.supportsPlan && (
           <>
-            {feet.map(({ apt }) => <Furniture key={`furniture-${apt.id}`} b={b} apt={apt} faded={faded} />)}
             <mesh geometry={UNIT_BOX} material={mat('slab', faded)} {...planBox(b, CORE, y0, 0.1)} receiveShadow userData={{ unitId: stairwellId }} />
-            {feet.flatMap(({ apt, mirrored }) => [...INTERIOR_WALLS, ...APT1_PERIMETER].map((w, i) => (
-              <mesh key={`${apt.id}-${i}`} geometry={UNIT_BOX} material={mat('wall', faded)}
-                {...planWall(b, w, y0, CUT_WALL_M, 0.2, mirrored)} castShadow receiveShadow />
-            )))}
+            {plan2d
+              ? feet.flatMap(({ apt, mirrored }) => [...INTERIOR_WALLS, ...APT1_PERIMETER].map((w, i) => (
+                <mesh key={`${apt.id}-${i}`} geometry={UNIT_BOX} material={mat('wall', faded)}
+                  {...planWall(b, w, y0, wallH, 0.2, mirrored)} castShadow receiveShadow />
+              )))
+              : feet.map(({ apt }) => (
+                <InteriorWalls key={`walls-${apt.id}`} b={b} apt={apt} ceiling={wallH} entryOpen faded={faded} />
+              ))}
             {([[10.5, 0, floor === 0 ? 13 : 15.5, 0], [10.5, PLAN_D, floor === 0 ? 13 : 15.5, PLAN_D]] as [number, number, number, number][]).map((w, i) => (
-              <mesh key={`core-${i}`} geometry={UNIT_BOX} material={mat('wall', faded)} {...planWall(b, w, y0, CUT_WALL_M, 0.2)} castShadow />
+              <mesh key={`core-${i}`} geometry={UNIT_BOX} material={mat('wall', faded)} {...planWall(b, w, y0, wallH, 0.2)} castShadow />
             ))}
             <group userData={{ unitId: stairwellId }}><Stairs b={b} y0={y0} /></group>
             {feet.map(({ apt, mirrored }) => (
@@ -142,7 +150,7 @@ export function Floor({ b, floor, mode, apartments, faded, stairwellId }: FloorP
         {!b.supportsPlan && feet.map(({ apt, rect }) => (
           [[rect.u0, 0, rect.u1, 0], [rect.u0, PLAN_D, rect.u1, PLAN_D], [rect.u0, 0, rect.u0, PLAN_D], [rect.u1, 0, rect.u1, PLAN_D]] as [number, number, number, number][]
         ).map((w, i) => (
-          <mesh key={`${apt.id}-${i}`} geometry={UNIT_BOX} material={mat('wall', faded)} {...planWall(b, w, y0, CUT_WALL_M, 0.2)} />
+          <mesh key={`${apt.id}-${i}`} geometry={UNIT_BOX} material={mat('wall', faded)} {...planWall(b, w, y0, wallH, 0.2)} />
         )))}
       </group>
     );

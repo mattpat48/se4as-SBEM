@@ -1,5 +1,5 @@
-// Paints every apartment each frame (view spec §7.9, §7.8): heat-map tint of windows and cut
-// slabs by day, emissive shells by night, grey (striped when stale) without fresh data, and the
+// Paints every apartment each frame (view spec §7.9, §7.8): heat-map tint of windows and of the
+// wooden cut slabs (V20) by day, emissive shells by night, grey (striped when stale) without fresh data, and the
 // red hazard pulse regardless of the heat map.
 import { useFrame } from '@react-three/fiber';
 import { useMemo } from 'react';
@@ -10,6 +10,7 @@ import { heatColor, isHazard } from '../domain/heat';
 import { displayedValue, isStale } from '../domain/interpolate';
 import type { ComplexLayout } from '../domain/layout';
 import type { SensorType } from '../domain/messages';
+import { floorFinish, woodPlanks } from '../domain/woodFloor';
 import { useLiveStore } from '../store/live';
 import { useModelStore } from '../store/model';
 import { useUiStore } from '../store/ui';
@@ -20,6 +21,10 @@ export const STALE_COLOR = '#9ca3af';
 const HAZARD_COLOR = '#ef4444';
 const SELECTED_COLOR = '#f59e0b';
 const WARM_LIGHT = '#fde68a';
+/** Colour of the bare wooden floor; the texture only adds planks and grain. */
+const WOOD_TINT = '#d6ad80';
+/** The wood texture spans 2 m of floor. */
+const WOOD_SPAN_M = 2;
 
 function stripeTexture(): THREE.CanvasTexture | null {
   if (typeof document === 'undefined') return null;
@@ -39,10 +44,45 @@ function stripeTexture(): THREE.CanvasTexture | null {
   return t;
 }
 
-const STRIPES = stripeTexture();
+/** Light, nearly grey planks with grain: the material colour (wood or heat colour) tints them. */
+function woodTexture(): THREE.CanvasTexture | null {
+  if (typeof document === 'undefined') return null;
+  const size = 512;
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d');
+  if (!g) return null;
+  let seed = 11;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (const p of woodPlanks(size, 10, 7)) {
+    const l = Math.round(214 + 38 * p.tone);
+    g.fillStyle = `rgb(${l},${l},${l})`;
+    g.fillRect(p.x, p.y, p.w, p.h);
+    // Grain: thin wavy streaks along the plank.
+    for (let i = 0; i < 7; i++) {
+      const y = p.y + 4 + rnd() * (p.h - 8), amp = 1 + rnd() * 3, k = 0.01 + rnd() * 0.03;
+      g.strokeStyle = `rgba(90,90,90,${0.08 + 0.1 * rnd()})`;
+      g.lineWidth = 0.6 + rnd() * 1.4;
+      g.beginPath();
+      for (let x = p.x; x <= p.x + p.w; x += 8) g.lineTo(x, y + amp * Math.sin(x * k + i));
+      g.stroke();
+    }
+    g.strokeStyle = 'rgba(70,70,70,0.55)';
+    g.lineWidth = 1.5;
+    g.strokeRect(p.x + 0.75, p.y + 0.75, p.w - 1.5, p.h - 1.5);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(10.5 / WOOD_SPAN_M, 12 / WOOD_SPAN_M);   // the apartment slab, 10.5 × 12 m
+  t.anisotropy = 4;
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
 
-function setMap(m: THREE.MeshStandardMaterial, striped: boolean) {
-  const map = striped ? STRIPES : null;
+const STRIPES = stripeTexture();
+const WOOD = woodTexture();
+
+function setMap(m: THREE.MeshStandardMaterial, map: THREE.Texture | null) {
   if (m.map !== map) { m.map = map; m.needsUpdate = true; }
 }
 
@@ -100,11 +140,14 @@ export function HeatPainter({ layout }: { layout: ComplexLayout }) {
         touched.add(w);
       }
 
-      // Cut floor slab: the heat colour itself.
+      // Cut floor slab (V20): wood, tinted by the heat colour while the heat map is on.
       if (parts.floor) {
         const m = parts.floor.material as THREE.MeshStandardMaterial;
-        m.color.set(ui.heatOn ? c.heat : c.tmp.set(p.slab));
-        setMap(m, striped);
+        const finish = floorFinish({ heatOn: ui.heatOn, state, dataMode });
+        if (finish.tint === 'heat') m.color.copy(c.heat);
+        else if (finish.tint === 'wood') m.color.set(WOOD_TINT).lerp(c.tmp.set(p.slab), 0.7 * night);
+        else m.color.set(p.slab);
+        setMap(m, finish.map === 'stripes' ? STRIPES : finish.map === 'wood' ? WOOD : null);
         if (hazard) { m.emissive.copy(c.red); m.emissiveIntensity = pulse; }
         else if (ui.heatOn) { m.emissive.copy(c.heat); m.emissiveIntensity = 0.9 * night; }
         else if (selected) { m.emissive.copy(c.sel); m.emissiveIntensity = 0.25; }
@@ -117,7 +160,7 @@ export function HeatPainter({ layout }: { layout: ComplexLayout }) {
         m.color.set(p.wall);
         if (dataMode && ui.heatOn) m.color.lerp(c.heat, 0.55);   // "plastico": colour only on the data
         if (striped) m.color.lerp(c.stale, 0.5);
-        setMap(m, striped);
+        setMap(m, striped ? STRIPES : null);
         if (hazard) { m.emissive.copy(c.red); m.emissiveIntensity = pulse; }
         else if (ui.heatOn && night > 0) { m.emissive.copy(c.heat); m.emissiveIntensity = 0.55 * night; }
         else if (selected) { m.emissive.copy(c.sel); m.emissiveIntensity = 0.2; }

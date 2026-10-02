@@ -27,7 +27,7 @@ Una **vista 3D navigabile nel browser** del complesso residenziale dell'Aquila (
 - **Fase 2** (sezione 15): strato leggero del manager (catena MAPE-K), persone evacuate nel parco, prima persona dentro l'appartamento.
 - Avvio di **scenari e guasti** dalla vista: restano a `mosquitto_pub` e, in futuro, alla UI Streamlit v2 (V10).
 - Qualunque modifica alla fisica del simulatore. **`area_m2` resta 80** (V6).
-- Modelli 3D esterni: tutta la geometria è generata dal codice.
+- Modelli 3D esterni per palazzi, parco, parcheggio e dispositivi: questa geometria è generata dal codice. **Eccezione (V20):** arredi e residenti usano modelli esterni CC0 (§7.2, §7.5; crediti in `view/public/models/CREDITS.md`).
 
 ---
 
@@ -270,9 +270,13 @@ Metri della pianta: `u` lungo il lato lungo (0…26), `v` in profondità (0 = la
 - **Vano scale** (`u` 10,5–15,5): scale 11–15 × 0,5–4,5; pianerottolo 10,5–15,5 × 4,5–8,5; ascensore 11–13 × 8,5–10,9; androne 13–15,5 × 8,5–12, aperto verso il lato 1 al piano terra (uscita verso il parco) e verso il lato 2 (ingresso dalla strada). Finestra delle scale sul lato 2 (11,2–14,8) dal 1° piano in su.
 - **Finestre:** sill 0,9 m e altezza 1,5 m, salvo le portefinestre.
 - **Se il modello ha un numero di appartamenti per piano diverso da 2**, la vista ripiega su blocchi senza stanze, di larghezza uguale, e senza dispositivi installati (solo le etichette).
+- **Muri dello spaccato (V20):** nel piano tagliato in 3D i muri sono **interi**, alti `floor_height_m` − 0,3 (2,9 m), sia negli appartamenti sia nel vano scale. Gli appartamenti usano gli stessi muri della prima persona (`domain/interior.ts`): vani delle finestre con davanzale, architrave e telaio, architravi sopra le porte interne e porta d'ingresso aperta. **In 2D** i muri restano tagliati a 1,1 m, come prima, perché la pianta resti leggibile. Ringhiere dei balconi e piani fantasma non cambiano.
+- **Arredi (V19, V20):** 33 ingombri per interno in `domain/furniture.ts` (30 al piano terra, senza il balcone), riempiti da modelli del **Kenney Furniture Kit** (CC0) secondo la tabella di `domain/furnitureModels.ts`. La tabella indica per ogni ingombro uno o più pezzi, con modello, verso del fronte (`+u`, `−u`, `+v`, `−v`) ed eventuale altezza massima. La cucina è fatta di 5 pezzi lungo il piano cucina (frigo, cassetti, fornello, mobile, lavello) con il fronte verso `+u`, e la TV sta sopra il suo mobile. Ogni modello si adatta al suo ingombro con **scala uniforme** (mai deformato), girato secondo il verso, centrato e appoggiato sulla soletta di 0,12 m (`scene/modelFit.ts`). La **caldaia** è l'unico pezzo disegnato a codice: il pacchetto non la contiene. Gli arredi si vedono negli appartamenti del piano tagliato e in quello visitato in prima persona, disegnati come istanze; non sono selezionabili. In **modalità dati** hanno un materiale neutro, così il colore resta solo sui dati; nei palazzi sbiaditi sono semitrasparenti.
 
 ### 7.3 Posizione dei dispositivi (`domain/placement.ts`)
 Altezze in metri dal pavimento; "soffitto" = `floor_height_m` − 0,3. Posizioni per l'interno 1, ruotate per l'interno 2.
+
+La resa grafica monta i dispositivi alle quote di `domain/deviceAppearance.ts`: quelli "a soffitto" stanno in alto sulle pareti. Queste quote valgono nella prima persona e, con i muri interi di V20, anche nello **spaccato 3D**. Solo la **planimetria 2D** li abbassa come in V19: i dispositivi a parete, compresi quelli alti e lo split, a non più di 0,9 m, e le lampade a 0,8 m.
 
 | Dispositivo | Dove | (`u`, `v`, altezza) |
 |---|---|---|
@@ -317,8 +321,8 @@ Un **sensore** è un piccolo disco bianco con un anello del colore della sua fam
 ### 7.4 Resa degli attuatori
 | Attuatore | Resa |
 |---|---|
-| `window` | ante ruotate di 70° se `open` |
-| `blinds` | tapparella abbassata di (100 − `position`) % |
+| `window` | ante ruotate di 70° se `open` (piani pieni e, dalla V20, vani finestra dello spaccato 3D) |
+| `blinds` | tapparella abbassata di (100 − `position`) % (piani pieni e spaccato 3D) |
 | `lights` | lampade e vetri emissivi proporzionali a `level` (visibili soprattutto di notte) |
 | `hvac` | split con un flusso di particelle blu (`cool`) o rosso (`heat`); spento se `off` |
 | `ventilation` | griglia che ruota con velocità proporzionale a `level` |
@@ -335,9 +339,11 @@ Un **sensore** è un piccolo disco bianco con un anello del colore della sua fam
 | `ev_charger` | auto presente se `car_connected`; LED che pulsa se `power_w` > 0; LED fisso in `pause` |
 
 ### 7.5 Persone
-- **Appartamento:** tante sagome stilizzate quante indica `occupancy` (arrotondato). Le posizioni sono stabili, scelte con un seme dall'ID dell'appartamento tra punti predefiniti delle stanze.
-- **Vano scale:** tante sagome sulle scale quante indica `occupancy` del vano scale.
-- Le sagome si vedono solo con il piano tagliato o in 2D.
+- **Appartamento:** tanti residenti quanti indica `occupancy` (arrotondato). Le posizioni sono stabili, scelte con un seme dall'ID dell'appartamento tra punti predefiniti delle stanze (`domain/people.ts`).
+- **Vano scale:** tanti residenti sulle scale quanti indica `occupancy` del vano scale. Stanno in piedi sul gradino sotto di loro (`domain/stairs.ts`).
+- **Personaggi (V20):** modelli **Quaternius Ultimate Modular** (CC0), 4 donne e 4 uomini già vestiti, animati con `SkeletonUtils.clone` e un `AnimationMixer` ciascuno (`domain/residents.ts`, `scene/People.tsx`). Variante, altezza (tra 1,60 e 1,80 m) e orientamento sono **stabili** per appartamento e posto (hash della chiave). In casa usano `Idle` o `Idle_Neutral` con una fase casuale; nel vano scale `Walk`, verso l'alto della rampa, perché sono persone in transito. Non esistono animazioni da seduti.
+- Al massimo **80 residenti** visibili. Le posizioni si aggiornano 2 volte al secondo; le animazioni solo per i residenti inquadrati.
+- I residenti si vedono con il piano tagliato, in 2D e nell'appartamento visitato in prima persona.
 
 ### 7.6 Giorno e notte (`domain/sun.ts`, `Lighting.tsx`)
 - Posizione del sole (azimut ed elevazione) calcolata dall'ora simulata, fuso `Europe/Rome`, con l'algoritmo approssimato NOAA.
@@ -364,7 +370,8 @@ Gli effetti derivano **solo dai sensori e dagli stati**. `Complex/scenarios` ser
 
 ### 7.9 Mappa di calore e modalità dati
 - **Mappa di calore attiva:** il colore della grandezza scelta tinge i vetri e il pavimento dello spaccato di giorno, e l'intero volume (emissivo) di notte. **Spenta:** nessuna tinta, ma le emergenze pulsano comunque.
-- **Modalità dati** (V13): materiali in stile "plastico" (volumi chiari, base neutra), colori solo sui dati; si attiva e disattiva dalla UI.
+- **Pavimento dello spaccato (V20):** listoni di legno generati a codice (`CanvasTexture`, nessuna immagine esterna; posa in `domain/woodFloor.ts`). Con la mappa di calore attiva il legno è **tinto del colore del dato**, e la venatura resta visibile. Con la mappa spenta è solo legno. Con dati non aggiornati è grigio tratteggiato, come prima. In modalità dati il pavimento resta liscio (niente legno), in stile plastico.
+- **Modalità dati** (V13): materiali in stile "plastico" (volumi chiari, base neutra), colori solo sui dati; si attiva e disattiva dalla UI. Arredi con un materiale neutro (V20).
 
 ---
 
@@ -378,10 +385,11 @@ Gli effetti derivano **solo dai sensori e dagli stati**. `Complex/scenarios` ser
 ### 8.2 2D e 3D
 - Il **2D** è la stessa scena vista dall'alto con una **camera ortografica**, raggiunta con una transizione animata. In 2D si guarda sempre un piano tagliato: di default il piano terra, con parco e parcheggio.
 - In 2D si possono spostare la camera e fare zoom, ma non ruotarla (nord in alto).
+- In 2D i muri del piano tagliato restano a 1,1 m e i dispositivi alle quote basse di V19 (§7.2, §7.3), come prima di V20.
 
 ### 8.3 Filtri
 - **Palazzo** (Tutti, A, B, C, D): gli altri palazzi diventano semitrasparenti e la camera si centra sul palazzo scelto.
-- **Piano** (Tutti, T, 1, 2, 3): i piani sopra diventano fantasmi (volumi trasparenti con i contorni); il piano scelto è tagliato a 1,1 m e mostra stanze, dispositivi e persone.
+- **Piano** (Tutti, T, 1, 2, 3): i piani sopra diventano fantasmi (volumi trasparenti con i contorni); il piano scelto è aperto dall'alto e mostra stanze, arredi, dispositivi e persone. In 3D i muri sono interi (2,9 m, V20); in 2D sono tagliati a 1,1 m (§7.2).
 
 ### 8.4 Sovraimpressioni (V11, `domain/lod.ts`)
 | Distanza camera–oggetto | Cosa si vede |
@@ -443,7 +451,9 @@ La vista non deve mai bloccarsi: ogni errore nei gestori dei messaggi viene inte
 
 ## 10. Prestazioni
 - **Obiettivo:** 60 fps su un portatile recente con la scena completa.
-- **Istanze** per sensori, finestre, alberi e persone; geometria statica di ogni palazzo unita in poche mesh.
+- **Istanze** per sensori, finestre, alberi e arredi (una mesh istanziata per ogni parte di ogni modello Kenney, condivisa da tutti gli appartamenti arredati); geometria statica di ogni palazzo unita in poche mesh.
+- **Residenti animati** (V20): al massimo 80, e il mixer si aggiorna solo per quelli inquadrati. Misura locale del 2026-10-02 nel browser integrato (800 × 1023 px, dpr 2): circa 100 fps con il piano 2 tagliato e i residenti reali, 52 fps con 80 residenti.
+- **Asset esterni** (V20): circa 2,4 MB al primo caricamento (26 arredi ≈ 0,45 MB, 8 personaggi meshopt ≈ 2 MB), precaricati all'avvio; la scena non li aspetta (`Suspense`).
 - **Una sola luce con ombre** (il sole), mappa d'ombra 2048 × 2048.
 - Risoluzione limitata a 2× e **abbassata automaticamente** se gli fps calano (monitor di prestazioni di drei).
 - Le **etichette** sono limitate a 40 (sezione 8.4). Le misure non provocano rendering di React (sezione 6.3).

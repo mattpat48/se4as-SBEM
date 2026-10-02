@@ -43,3 +43,15 @@ test('first-person sensors use full mounting heights and only the visited apartm
     expect(new THREE.Vector3().setFromMatrixPosition(instances[0].matrix).y).toBeCloseTo(.6+2*3.2+pose.h);
   }
 });
+
+test('the 3D cut floor, with whole walls, uses the real mounting heights of every apartment (V20)', () => {
+  const batches = buildSensorBatches(layout, 2, null, true);
+  expect(batches.size).toBe(12);
+  for (const [type, instances] of batches) {
+    expect(instances).toHaveLength(8);
+    const pose = apartmentDevicePose(type, true)!;
+    for (const instance of instances)
+      expect(new THREE.Vector3().setFromMatrixPosition(instance.matrix).y, instance.id).toBeCloseTo(.6 + 2 * 3.2 + pose.h);
+  }
+  expect([...batches.values()].some((list) => apartmentDevicePose(list[0].id.split('.')[1], true)!.h > 2)).toBe(true);
+});

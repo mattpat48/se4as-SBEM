@@ -145,11 +145,16 @@ export function WindowActuators({ b, apt, immersive = false }: { b: BuildingGeom
   );
 }
 
-/** Interior devices of one apartment, shown on the cut floor. */
-export function InteriorActuators({ b, apt, immersive = false }: { b: BuildingGeom; apt: ApartmentGeom; immersive?: boolean }) {
+/**
+ * Interior devices of one apartment, shown on the cut floor. `realHeights` mounts them as in the
+ * first person, as the 3D cut does with its whole walls (V20); the 2D plan keeps them low.
+ */
+export function InteriorActuators({ b, apt, immersive = false, realHeights = immersive }: {
+  b: BuildingGeom; apt: ApartmentGeom; immersive?: boolean; realHeights?: boolean;
+}) {
   const y0 = PLINTH_M + apt.floor * b.floorHeight;
   const at = (type: string): [number, number, number] => {
-    const pl = apartmentDevicePose(type, immersive);
+    const pl = apartmentDevicePose(type, realHeights);
     if (!pl) return [0, 0, 0];
     const [x, z] = planLocal(b, pl.u, pl.v, apt.mirrored);
     return [x, y0 + pl.h, z];
@@ -190,12 +195,12 @@ export function InteriorActuators({ b, apt, immersive = false }: { b: BuildingGe
 
   const turn = apt.mirrored ? Math.PI : 0;
   const [kx, kz] = planLocal(b, 10.381, 5.65, apt.mirrored);
-  const facing = (type: string) => turn + (apartmentDevicePose(type, immersive)?.rotationY ?? 0);
+  const facing = (type: string) => turn + (apartmentDevicePose(type, realHeights)?.rotationY ?? 0);
   return (
     <group>
       {ROOM_LIGHTS.map((l, i) => {
         const [x, z] = planLocal(b, l.u, l.v, apt.mirrored);
-        return <group key={l.room} position={[x, y0 + (immersive ? l.h : .8), z]} rotation={[0, turn + l.rotationY, 0]} userData={{ deviceId: `${apt.id}.lights` }}>
+        return <group key={l.room} position={[x, y0 + (realHeights ? l.h : .8), z]} rotation={[0, turn + l.rotationY, 0]} userData={{ deviceId: `${apt.id}.lights` }}>
           <DeviceShell type="light" />
           <mesh geometry={UNIT_BOX} material={lampMat} position={[0, 0, .06]} scale={[.16, .2, .04]} />
           {immersive && <pointLight ref={(p) => { roomLights.current[i] = p; }} position={[0, 0, .3]} intensity={0} distance={8} decay={2} color="#ffe5b6" />}
@@ -227,7 +232,7 @@ export function InteriorActuators({ b, apt, immersive = false }: { b: BuildingGe
         <group rotation={[Math.PI / 2, 0, 0]}><DeviceShell type="alarm" />
         <mesh material={alarmMat} position={[0.06, 0.065, 0.07]}><sphereGeometry args={[0.075, 12, 8]} /></mesh></group>
       </group>
-      <group position={[kx, y0 + (immersive ? 1.45 : .9), kz]} rotation={[0, turn - Math.PI / 2, 0]} userData={{ deviceId: `${apt.id}.alarm` }}>
+      <group position={[kx, y0 + (realHeights ? 1.45 : .9), kz]} rotation={[0, turn - Math.PI / 2, 0]} userData={{ deviceId: `${apt.id}.alarm` }}>
         <DeviceShell type="keypad" />
       </group>
       <group position={at('water_flow')} rotation={[0, turn - Math.PI / 2, 0]} userData={{ unitId: apt.id }}>
@@ -342,10 +347,13 @@ function BuildingActuators({ b }: { b: BuildingGeom }) {
 function BuildingDevices({ b, apartments }: { b: BuildingGeom; apartments: ApartmentGeom[] }) {
   const floor = useUiStore((s) => s.floor);
   const building = useUiStore((s) => s.building);
+  const plan2d = useUiStore((s) => s.mode === '2d');
   return (
     <group position={[b.center.x, 0, b.center.z]} rotation={[0, b.rotationY, 0]}>
-      {b.supportsPlan && apartments.filter((a) => floorMode(a.floor, floor) === 'solid').map((a) => <WindowActuators key={`w${a.id}`} b={b} apt={a} />)}
-      {b.supportsPlan && apartments.filter((a) => floor === a.floor).map((a) => <InteriorActuators key={`i${a.id}`} b={b} apt={a} />)}
+      {/* Sashes and blinds on solid floors, and on the window openings of the 3D cut (V20). */}
+      {b.supportsPlan && apartments.filter((a) => floorMode(a.floor, floor) === 'solid' || (a.floor === floor && !plan2d))
+        .map((a) => <WindowActuators key={`w${a.id}`} b={b} apt={a} />)}
+      {b.supportsPlan && apartments.filter((a) => floor === a.floor).map((a) => <InteriorActuators key={`i${a.id}`} b={b} apt={a} realHeights={!plan2d} />)}
       <StairwellActuators b={b} cutFloor={floor} roofVisible={floor === null} />
       {(floor === 0 || (floor === null && building === b.id)) && <BuildingActuators b={b} />}
     </group>
