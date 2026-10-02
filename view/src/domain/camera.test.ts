@@ -22,7 +22,7 @@ test('minimap to world, north up', () => {
   expect(minimapToWorld(100, 100, 200, 92)).toEqual({ x: 0, z: 0 });
   expect(minimapToWorld(200, 200, 200, 92)).toEqual({ x: 92, z: 92 });
   expect([MINIMAP_SIZE_PX, MINIMAP_EXTENT_M]).toEqual([200, 92]);
-  expect(CAMERA_LIMITS).toEqual({ minDistance: 2, maxDistance: 350, maxPolarAngle: Math.PI * 0.47 });
+  expect(CAMERA_LIMITS).toEqual({ minDistance: 2, maxDistance: 850, maxPolarAngle: Math.PI * 0.47 });
 });
 
 test('the minimap dot marks the framed point; the wedge starts at the camera and points at it', () => {

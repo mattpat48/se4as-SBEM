@@ -4,6 +4,8 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { ComplexLayout, Vec3 } from '../domain/layout';
 import { windSway } from '../domain/effects';
+import { gardenCore } from '../domain/garden';
+import { GardenLandscape } from './GardenLandscape';
 import { treeSpecs, type TreeSpec } from '../domain/trees';
 import { readingNow } from './readings';
 import { UNIT_BOX, fixedMat, mat } from './materials';
@@ -56,7 +58,6 @@ export function Trees({ trees }: { trees: TreeSpec[] }) {
 const poleMat = () => fixedMat('pole', () => new THREE.MeshStandardMaterial({ color: '#374151', roughness: 0.6 }));
 const lampMat = () => fixedMat('lampOff', () => new THREE.MeshStandardMaterial({ color: '#fef3c7', emissive: '#fde68a', emissiveIntensity: 0 }));
 const stoneMat = () => fixedMat('stone', () => new THREE.MeshStandardMaterial({ color: '#e7e1d6', roughness: 0.8 }));
-const waterMat = () => fixedMat('water', () => new THREE.MeshStandardMaterial({ color: '#7dd3fc', roughness: 0.1 }));
 const metalMat = () => fixedMat('metal', () => new THREE.MeshStandardMaterial({ color: '#9ca3af', roughness: 0.4, metalness: 0.6 }));
 
 export function LampPost({ p }: { p: Vec3 }) {
@@ -91,12 +92,13 @@ function Anemometer() {
 }
 
 export function Park({ layout }: { layout: ComplexLayout }) {
-  const { center, width, depth } = layout.park;
+  const { center, width, depth } = gardenCore(layout);
   const trees = useMemo(() => treeSpecs(layout), [layout]);
   const st = layout.parkFixtures.station;
   const ringR = Math.min(width, depth) / 5;
   return (
     <group userData={{ unitId: 'park' }}>
+      <GardenLandscape layout={layout} />
       <mesh geometry={UNIT_BOX} material={mat('grass')} position={[center.x, 0.1, center.z]} scale={[width, 0.2, depth]} receiveShadow
         userData={{ unitId: 'park' }} />
       <mesh geometry={UNIT_BOX} material={mat('path')} position={[center.x, 0.11, center.z]} scale={[width, 0.22, 3]} receiveShadow />
@@ -104,12 +106,7 @@ export function Park({ layout }: { layout: ComplexLayout }) {
       <mesh material={mat('path')} position={[center.x, 0.2, center.z]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 1, 0.12]} receiveShadow>
         <torusGeometry args={[ringR, 1.2, 6, 48]} />
       </mesh>
-      <mesh material={stoneMat()} position={[center.x, 0.35, center.z]} castShadow receiveShadow>
-        <cylinderGeometry args={[3.2, 3.4, 0.7, 32]} />
-      </mesh>
-      <mesh material={waterMat()} position={[center.x, 0.72, center.z]}>
-        <cylinderGeometry args={[2.8, 2.8, 0.1, 32]} />
-      </mesh>
+      <Fountain x={center.x} z={center.z} />
       <Trees trees={trees} />
       {layout.parkFixtures.lamps.map((p, i) => <LampPost key={i} p={p} />)}
       <group position={[st.x, 0, st.z]} userData={{ unitId: 'park' }}>
@@ -125,4 +122,29 @@ export function Park({ layout }: { layout: ComplexLayout }) {
       ))}
     </group>
   );
+}
+
+
+function Fountain({x,z}:{x:number;z:number}) {
+  const jets=useRef<THREE.InstancedMesh>(null);
+  const water=useMemo(()=>new THREE.MeshStandardMaterial({color:'#75b9bd',roughness:.2,metalness:.15,transparent:true,opacity:.78}),[]);
+  const drops=useMemo(()=>new THREE.SphereGeometry(.07,6,4),[]);
+  useLayoutEffect(()=>()=>{water.dispose();drops.dispose();},[water,drops]);
+  const matrix=useMemo(()=>new THREE.Matrix4(),[]);
+  useFrame(({clock})=>{
+    const t=clock.elapsedTime;
+    for(let i=0;i<96;i++) {const a=(i%8)*Math.PI/4,k=((Math.floor(i/8)/12+t*.35)%1),r=.35+k*2.15;matrix.makeScale(1,1.6,1).setPosition(x+Math.cos(a)*r,.9+Math.sin(k*Math.PI)*2.1,z+Math.sin(a)*r);jets.current!.setMatrixAt(i,matrix);}
+    jets.current!.instanceMatrix.needsUpdate=true;
+  });
+  return <group>
+    <mesh position={[x,.12,z]} material={stoneMat()} receiveShadow><cylinderGeometry args={[4.4,4.6,.24,64]}/></mesh>
+    <mesh position={[x,.39,z]} material={stoneMat()} castShadow receiveShadow><cylinderGeometry args={[3.2,3.4,.62,64]}/></mesh>
+    <mesh position={[x,.73,z]} rotation={[-Math.PI/2,0,0]} material={stoneMat()}><torusGeometry args={[3.02,.22,10,64]}/></mesh>
+    <mesh position={[x,.73,z]} material={water}><cylinderGeometry args={[2.82,2.82,.06,64]}/></mesh>
+    <mesh position={[x,1.18,z]} material={stoneMat()} castShadow><cylinderGeometry args={[.3,.48,1.05,24]}/></mesh>
+    <mesh position={[x,1.72,z]} material={stoneMat()} castShadow><cylinderGeometry args={[1.03,.45,.3,32]}/></mesh>
+    <mesh position={[x,1.91,z]} material={water}><cylinderGeometry args={[.94,.94,.05,32]}/></mesh>
+    <mesh position={[x,2.1,z]} material={stoneMat()} castShadow><cylinderGeometry args={[.13,.24,.6,16]}/></mesh>
+    <instancedMesh ref={jets} args={[drops,water,96]} frustumCulled={false}/>
+  </group>;
 }

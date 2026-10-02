@@ -27,7 +27,7 @@ function configure(c: CameraControlsImpl, ortho: boolean, viewHeightPx: number) 
   c.smoothTime = TRANSITION_SMOOTH_TIME;
   c.minDistance = CAMERA_LIMITS.minDistance;
   c.maxDistance = CAMERA_LIMITS.maxDistance;
-  c.setBoundary(new THREE.Box3(new THREE.Vector3(-110, 0, -110), new THREE.Vector3(110, 60, 110)));
+  c.setBoundary(new THREE.Box3(new THREE.Vector3(-480, 0, -440), new THREE.Vector3(480, 120, 440)));
   if (ortho) {
     c.minPolarAngle = 0; c.maxPolarAngle = 0;
     c.azimuthRotateSpeed = 0; c.polarRotateSpeed = 0;
@@ -134,7 +134,7 @@ export function CameraRig({ layout }: { layout: ComplexLayout }) {
 
   return (
     <>
-      <PerspectiveCamera makeDefault={active === 'persp'} fov={walking ? 68 : FOV} near={0.04} far={1500} position={[...INITIAL.position]} />
+      <PerspectiveCamera makeDefault={active === 'persp'} fov={walking ? 68 : FOV} near={walking ? 0.04 : 1} far={2500} position={[...INITIAL.position]} />
       <OrthographicCamera ref={orthoRef} makeDefault={active === 'ortho'} near={0.5} far={2000} />
       <CameraControls ref={setControls} makeDefault enabled={!walking} />
       {walking && controls && active === 'persp' && <FirstPersonNavigation layout={layout} controls={controls} />}

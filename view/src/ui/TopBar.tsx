@@ -8,6 +8,8 @@ import { useModelStore } from '../store/model';
 import { chooseWalkApartment } from '../domain/walk';
 import { useUiStore } from '../store/ui';
 import { useWalkStore } from '../store/walk';
+import { cameraApi } from '../scene/CameraRig';
+import { LOCATION_CAMERA } from '../scene/location/site';
 
 function useClockLabel(): string {
   const [label, setLabel] = useState('—');
@@ -83,6 +85,7 @@ export function TopBar() {
         <button className={mode === '2d' ? 'is-on' : ''} onClick={() => { useWalkStore.getState().exit(); ui.setMode('2d'); }} title="2 = planimetria 2D">2D</button>
       </div>
       <button className={`walk-enter ${inside ? 'is-on' : ''}`} disabled={!inside && !entry} onClick={() => { if (inside) useWalkStore.getState().exit(); else if (entry && layout) useWalkStore.getState().start(layout, entry.id); }}>{inside ? 'Esci dalla casa' : 'Entra in casa'}</button>
+      <button disabled={!layout || inside || mode !== '3d'} onClick={() => { ui.setBuilding(null); ui.setFloor(null); cameraApi.controls?.setLookAt(...LOCATION_CAMERA.position, ...LOCATION_CAMERA.target, true); }} title="Panoramica del resort e dei dintorni di Piazza d’Armi">Piazza d’Armi</button>
       <label className="topbar__field">Palazzo
         <select disabled={!!inside} value={building ?? ''} onChange={(e) => ui.setBuilding(e.target.value || null)}>
           <option value="">Tutti</option>

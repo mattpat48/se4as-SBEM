@@ -7,6 +7,7 @@ import {
   BALCONY, BALCONY_DOOR, ENTRY_DOOR, INTERIOR_WALLS, LIFT, PLAN_D, PLAN_W, PLINTH_M, mirror, type PlanRect,
 } from './plan';
 import { CORE_SLAB_M, STAIR_DIVIDER, stairSteps } from './stairs';
+import { gardenPlan, type GardenObstacle } from './garden';
 import { treeSpecs, trunkRadius } from './trees';
 
 /** Height of the apartment floor slab above the storey (as the furniture and residents use). */
@@ -25,7 +26,7 @@ export interface Box extends PlanRect { y0: number; y1: number }
 export interface Surface extends PlanRect { y: number; yEnd?: number }
 export interface Circle { x: number; z: number; r: number }
 export interface BuildingWalk { b: BuildingGeom; open: boolean; boxes: Box[]; surfaces: Surface[]; doors: DoorSpec[]; reach: number }
-export interface WalkWorld { buildings: BuildingWalk[]; circles: Circle[]; lawn: { x0: number; x1: number; z0: number; z1: number } }
+export interface WalkWorld { outdoorBoxes: GardenObstacle[]; buildings: BuildingWalk[]; circles: Circle[]; lawn: { x0: number; x1: number; z0: number; z1: number } }
 /** Live state the walls depend on: door openness (0…1) and the blinds of an apartment (0…1 covered). */
 export interface WalkEnv { doorOpenness(door: DoorSpec): number; blindsCover(aptId: string): number }
 
@@ -112,8 +113,9 @@ export function buildWalkWorld(layout: ComplexLayout, openBuildingId: string | n
     pole(layout.parkFixtures.station, 0.1),
     ...layout.parkFixtures.signs.map((p) => pole(p, 0.06)),
   ];
-  const { center, width, depth } = layout.park;
-  return { buildings, circles, lawn: { x0: center.x - width / 2, x1: center.x + width / 2, z0: center.z - depth / 2, z1: center.z + depth / 2 } };
+  const garden = gardenPlan(layout);
+  const { center, width, depth } = garden.core;
+  return { outdoorBoxes: garden.obstacles, buildings, circles, lawn: { x0: center.x - width / 2, x1: center.x + width / 2, z0: center.z - depth / 2, z1: center.z + depth / 2 } };
 }
 
 /** World → unrotated plan metres of a building (same transform as `worldToPlan`). */
@@ -150,6 +152,12 @@ export function blockedAt(world: WalkWorld, x: number, z: number, feet: number, 
   const lo = feet + BODY_FROM_M, hi = feet + BODY_TO_M;
   const overlaps = (y0: number, y1: number) => y0 < hi && y1 > lo;
   if (overlaps(0, 3)) for (const c of world.circles) if (Math.hypot(x - c.x, z - c.z) < c.r + r) return true;
+  for (const o of world.outdoorBoxes) {
+    if (!overlaps(0, o.height)) continue;
+    const dx=x-o.x,dz=z-o.z,c=Math.cos(o.angle),s=Math.sin(o.angle);
+    const u=dx*c-dz*s,v=dx*s+dz*c;
+    if (Math.hypot(Math.max(Math.abs(u)-o.width/2,0),Math.max(Math.abs(v)-o.depth/2,0)) < r) return true;
+  }
   for (const bw of world.buildings) {
     if (Math.hypot(x - bw.b.center.x, z - bw.b.center.z) > bw.reach) continue;
     const { u, v } = toPlan(bw.b, x, z);

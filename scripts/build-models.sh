@@ -36,13 +36,17 @@ PEOPLE=(
 CLIPS="Idle,Idle_Neutral,Walk"
 
 NEW="$WORK/models"
-mkdir -p "$NEW/furniture" "$NEW/people"
+mkdir -p "$NEW/furniture" "$NEW/people" "$NEW/garden"
 
 echo "Kenney Furniture Kit…"
 curl -fsSL "$KENNEY_ZIP" -o "$WORK/kenney.zip"
 unzip -q "$WORK/kenney.zip" -d "$WORK/kenney"
 for name in "${FURNITURE[@]}"; do
   cp "$WORK/kenney/Models/GLTF format/$name.glb" "$NEW/furniture/"
+done
+
+for name in bench trashcan; do
+  cp "$WORK/kenney/Models/GLTF format/$name.glb" "$NEW/garden/"
 done
 
 echo "Quaternius Ultimate Modular Women / Men…"
@@ -62,7 +66,7 @@ PY
     --simplify false --instance false --flatten false --join false --palette false >/dev/null
 done
 
-rm -rf "$OUT/furniture" "$OUT/people"
-mv "$NEW/furniture" "$NEW/people" "$OUT/"
-du -sh "$OUT/furniture" "$OUT/people"
+rm -rf "$OUT/furniture" "$OUT/people" "$OUT/garden"
+mv "$NEW/furniture" "$NEW/people" "$NEW/garden" "$OUT/"
+du -sh "$OUT/furniture" "$OUT/people" "$OUT/garden"
 ls -l "$OUT/people"

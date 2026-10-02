@@ -93,7 +93,7 @@ export function Lighting() {
   return (
     <>
       <color attach="background" args={[DAY.sky]} />
-      <fog attach="fog" args={[DAY.sky, 180, 420]} />
+      <fog attach="fog" args={[DAY.sky, 420, 1600]} />
       <hemisphereLight ref={hemi} args={[DAY.hemiSky, DAY.hemiGround, DAY.hemiIntensity]} />
       <directionalLight
         ref={sun}

@@ -53,3 +53,15 @@ test('a lowered blind blocks the balcony door even when it is open', () => {
   expect(blockedAt(world, p.x, p.z, feet, 0.18, openEnv)).toBe(false);
   expect(blockedAt(world, p.x, p.z, feet, 0.18, { ...openEnv, blindsCover: () => 0.5 })).toBe(true);
 });
+
+test('the enlarged garden supports the walker, furniture blocks, and entrance ramps stay clear', () => {
+  const world = buildWalkWorld(layout, null);
+  expect(surfacesAt(world, 35, 32)).toContain(.2);
+  // Long sides of the benches follow their rendered rotation, with space in front to pass.
+  const bench = world.outdoorBoxes[0];
+  expect(blockedAt(world, bench.x, bench.z, .2, .18, closedEnv)).toBe(true);
+  const x=bench.x+Math.sin(bench.angle)*2,z=bench.z+Math.cos(bench.angle)*2;
+  expect(blockedAt(world, x, z, .2, .18, closedEnv)).toBe(false);
+  // The EV parking remains on ground level, outside the raised lawn.
+  expect(surfacesAt(world, layout.parking.center.x, layout.parking.center.z)).toEqual([0]);
+});

@@ -11,6 +11,7 @@ import { Cars } from './Cars';
 import { Devices } from './Devices';
 import { UNIT_BOX, mat } from './materials';
 import { Park } from './Park';
+import { PiazzaDArmi } from './location/PiazzaDArmi';
 import { OpenBuilding } from './OpenBuilding';
 import { Parking } from './Parking';
 import { RoomLightPool } from './RoomLightPool';
@@ -60,6 +61,7 @@ export function Complex({ layout }: { layout: ComplexLayout }) {
   const byBuilding = useMemo(() => new Map(layout.buildings.map((b) => [b.id, layout.apartments.filter((a) => a.building === b.id)])), [layout]);
   return (
     <group onClick={onPick}>
+      <PiazzaDArmi />
       <mesh geometry={UNIT_BOX} material={mat('ground')} position={[0, -0.5, 0]} scale={[200, 1, 200]} receiveShadow />
       {ROADS.map(([w, d, x, z], i) => (
         <mesh key={i} geometry={UNIT_BOX} material={mat('road')} position={[x, 0.03, z]} scale={[w, 0.06, d]} receiveShadow />

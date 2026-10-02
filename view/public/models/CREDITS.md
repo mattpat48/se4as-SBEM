@@ -26,3 +26,10 @@ Tutti i modelli di questa cartella sono di pubblico dominio (**CC0 1.0**, https:
   | `man-worker.glb` | Males / Worker |
 
 - Modifiche: delle 24 animazioni restano solo `Idle`, `Idle_Neutral` e `Walk`. I file sono convertiti in GLB e compressi con meshopt tramite `@gltf-transform/cli` 4.5.1.
+
+## `garden/`: arredi del parco
+
+- `bench.glb` e `trashcan.glb`: **Kenney Furniture Kit**, CC0 1.0.
+- Fonte ufficiale: https://kenney.nl/assets/furniture-kit.
+- Copiati dal pacchetto originale senza modifiche; dimensioni adattate nella vista.
+- Fontana a cascata, pergole, aiuole e percorsi: geometria procedurale del progetto.

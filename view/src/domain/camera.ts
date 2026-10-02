@@ -2,7 +2,7 @@
 import type { BuildingGeom, Vec3 } from './layout';
 import { PLINTH_M } from './plan';
 
-export const CAMERA_LIMITS = { minDistance: 2, maxDistance: 350, maxPolarAngle: Math.PI * 0.47 };
+export const CAMERA_LIMITS = { minDistance: 2, maxDistance: 850, maxPolarAngle: Math.PI * 0.47 };
 export const MINIMAP_SIZE_PX = 200;
 export const MINIMAP_EXTENT_M = 92;
 
