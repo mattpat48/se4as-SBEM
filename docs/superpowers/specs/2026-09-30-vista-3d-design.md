@@ -398,7 +398,15 @@ Gli effetti derivano **solo dai sensori e dagli stati**. `Complex/scenarios` ser
 | 60–150 m | Un'etichetta per appartamento: "A-2-1 · 23.8 °C" (grandezza della mappa di calore) |
 | < 60 m, oppure piano tagliato | Le etichette dei dispositivi installati, con il loro valore |
 
-Al massimo **40 etichette** insieme: si scelgono le più vicine tra quelle inquadrate. Le etichette sono elementi HTML ancorati alla scena.
+Al massimo **40 etichette** insieme: si scelgono le più vicine tra quelle inquadrate **e in vista**. Le etichette sono elementi HTML ancorati alla scena.
+
+**Etichette coperte** (2026-10-02, `scene/labelOcclusion.ts`): un'etichetta si nasconde quando una parte opaca di un palazzo sta tra la camera e il suo punto. Il controllo è un raggio, rifatto a ogni scelta delle etichette (4 volte al secondo).
+- **Contano come ostacoli** solo i palazzi opachi: muri, involucri, solette e scale. Non contano i piani fantasma, i palazzi sbiaditi, i vetri, gli alberi, gli arredi e le persone.
+- **Appartamento:** la sua etichetta si vede finché è in vista almeno una delle sue quattro facciate.
+- **Dispositivo:** la sua etichetta si vede se è in vista l'etichetta stessa oppure il dispositivo. Le superfici entro 0,3 m dal punto, come il muro su cui è appeso il sensore, non coprono.
+- **2D:** il raggio scende dall'alto, parallelo alla vista.
+- **Emergenze:** le icone di pericolo (⚠) non si nascondono mai (V12).
+- **Prima persona:** i nomi dei dispositivi erano già nascosti dietro i muri (`occlude` di drei).
 
 ### 8.5 Barra in alto
 Nome del complesso · data, ora simulata e velocità · 2D/3D · Palazzo · Piano · grandezza della mappa di calore più l'interruttore · modalità dati · scenari attivi come etichette (per esempio "🔥 fire · A-2-1") · stato del broker e del simulatore.

@@ -1,8 +1,9 @@
 // Overlays by zoom level (view spec §8.4, V11): far → only ⚠ on hazards, mid → one label per
 // apartment, near (or a cut floor) → the installed devices with their values. At most 40,
-// the nearest in view, re-chosen at most 4 times per second.
+// the nearest in view, re-chosen at most 4 times per second. A label hides behind opaque parts of
+// the buildings, as its anchor would; hazard markers always show (V12).
 import { Html } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { apartmentDevicePose } from '../domain/deviceAppearance';
@@ -15,10 +16,18 @@ import type { SensorType } from '../domain/messages';
 import { useLiveStore } from '../store/live';
 import { useModelStore } from '../store/model';
 import { useUiStore } from '../store/ui';
+import { facadePoints, labelEye, labelOccluded } from './labelOcclusion';
+import { getUnit } from './registry';
 
 const REFRESH_S = 0.25;
+/** Apartment device labels float this high above their device. */
+const LABEL_LIFT_M = 0.18;
 
-interface LabelItem { key: string; position: Vec3; text: string; kind: 'hazard' | 'unit' | 'device'; distance: number; inView: boolean }
+interface LabelItem {
+  key: string; position: Vec3; text: string; kind: 'hazard' | 'unit' | 'device'; distance: number; inView: boolean;
+  /** Apartment labels: shown while one facade of this unit is in sight. */
+  unitId?: string;
+}
 
 function deviceText(d: DevicePlacement, now: number, period: number, types: Record<string, SensorType>): string {
   const icon = DEVICE_ICONS[d.type] ?? '•';
@@ -42,6 +51,8 @@ export function Labels({ layout }: { layout: ComplexLayout }) {
   const frustum = useMemo(() => new THREE.Frustum(), []);
   const m4 = useMemo(() => new THREE.Matrix4(), []);
   const v = useMemo(() => new THREE.Vector3(), []);
+  const scene = useThree((s) => s.scene);
+  const sight = useMemo(() => ({ ray: new THREE.Raycaster(), eye: new THREE.Vector3(), anchor: new THREE.Vector3(), box: new THREE.Box3() }), []);
 
   const byId = useMemo(() => new Map(layout.buildings.map((b) => [b.id, b])), [layout]);
   const apartmentAnchors = useMemo(() => layout.apartments.map((a) => {
@@ -56,7 +67,7 @@ export function Labels({ layout }: { layout: ComplexLayout }) {
       for (const d of layout.devices.values()) {
         if (d.unitId !== a.id) continue;
         const p = apartmentDevicePose(d.type, !plan2d);
-        if (p) out.set(d.deviceId, planToWorld(b, p.u, p.v, p.h + .18, a.floor, a.mirrored));
+        if (p) out.set(d.deviceId, planToWorld(b, p.u, p.v, p.h + LABEL_LIFT_M, a.floor, a.mirrored));
       }
     }
     return out;
@@ -78,9 +89,9 @@ export function Labels({ layout }: { layout: ComplexLayout }) {
     const cut = ui.floor !== null;
     frustum.setFromProjectionMatrix(m4.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
     const out: LabelItem[] = [];
-    const push = (key: string, p: Vec3, text: string, kind: LabelItem['kind']) => {
+    const push = (key: string, p: Vec3, text: string, kind: LabelItem['kind'], unitId?: string) => {
       v.set(p.x, p.y, p.z);
-      out.push({ key, position: p, text, kind, distance: camera.position.distanceTo(v), inView: frustum.containsPoint(v) });
+      out.push({ key, position: p, text, kind, distance: camera.position.distanceTo(v), inView: frustum.containsPoint(v), unitId });
     };
     const q = ui.heatQuantity;
     const pushDevices = (unitId: string) => {
@@ -100,7 +111,7 @@ export function Labels({ layout }: { layout: ComplexLayout }) {
       } else {
         const r = live.readings.get(`${apt.id}.${q}`);
         const value = r ? formatValue(displayedValue(r, now, period), HEAT_SCALES[q].unit) : 'in attesa';
-        push(apt.id, anchor, `${hazard ? '⚠ ' : ''}${apt.id} · ${value}`, hazard ? 'hazard' : 'unit');
+        push(apt.id, anchor, `${hazard ? '⚠ ' : ''}${apt.id} · ${value}`, hazard ? 'hazard' : 'unit', apt.id);
       }
     }
     // Stairwells and buildings: devices when close, on the cut floor or in the selected building.
@@ -123,7 +134,20 @@ export function Labels({ layout }: { layout: ComplexLayout }) {
           push(d.deviceId, p, deviceText(d, now, period, types), 'device');
       }
     }
-    const picked = pickLabels(out);
+    // Buildings are the only occluders: scenery, furniture and people never hide a label.
+    const occluders: THREE.Object3D[] = [];
+    scene.traverse((o) => { if (o.userData.buildingId) occluders.push(o); });
+    const inSight = (p: THREE.Vector3) => !labelOccluded(sight.ray, labelEye(camera, p, sight.eye), p, occluders);
+    const visible = (it: LabelItem) => {
+      if (it.kind === 'hazard') return true;
+      const own = it.unitId ? getUnit(it.unitId) : undefined;
+      const body = own?.shells[0] ?? own?.floor;
+      if (body) return facadePoints(sight.box.setFromObject(body)).some(inSight);
+      // A device label shows while the label or its device is in sight (seen past a lintel or a wall top).
+      return inSight(sight.anchor.set(it.position.x, it.position.y, it.position.z))
+        || (it.kind === 'device' && inSight(sight.anchor.set(it.position.x, it.position.y - LABEL_LIFT_M, it.position.z)));
+    };
+    const picked = pickLabels(out, undefined, visible);
     setItems((prev) => (prev.length === picked.length && prev.every((x, i) => x.key === picked[i].key && x.text === picked[i].text && x.position.x === picked[i].position.x && x.position.y === picked[i].position.y && x.position.z === picked[i].position.z) ? prev : picked));
   });
 

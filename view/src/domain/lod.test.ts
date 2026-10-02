@@ -15,3 +15,11 @@ test('pickLabels keeps the 40 nearest in view', () => {
   for (let i = 1; i < picked.length; i++) expect(picked[i].distance).toBeGreaterThanOrEqual(picked[i - 1].distance);
   expect(pickLabels(items, 3).length).toBe(3);
 });
+
+test('pickLabels skips hidden labels and still fills up to the limit with the nearest visible ones', () => {
+  const items = Array.from({ length: 10 }, (_, i) => ({ id: i, distance: i, inView: true }));
+  const checked: number[] = [];
+  const picked = pickLabels(items, 3, (it) => { checked.push(it.id); return it.id % 2 === 1; });
+  expect(picked.map((p) => p.id)).toEqual([1, 3, 5]);
+  expect(checked).toEqual([0, 1, 2, 3, 4, 5]);       // nearest first, stopping once the limit is reached
+});

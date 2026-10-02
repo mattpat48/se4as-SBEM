@@ -9,7 +9,16 @@ export function lodLevel(distance: number, floorCut: boolean): Lod {
   return distance >= 60 ? 'mid' : 'near';
 }
 
-/** The nearest `max` items inside the camera frustum. */
-export function pickLabels<T extends { distance: number; inView: boolean }>(items: T[], max = MAX_LABELS): T[] {
-  return items.filter((i) => i.inView).sort((a, b) => a.distance - b.distance).slice(0, max);
+/**
+ * The nearest `max` items inside the camera frustum that are also `visible` (not hidden behind a
+ * building). Visibility is asked nearest first and only until the limit is reached.
+ */
+export function pickLabels<T extends { distance: number; inView: boolean }>(items: T[], max = MAX_LABELS,
+  visible: (item: T) => boolean = () => true): T[] {
+  const out: T[] = [];
+  for (const it of items.filter((i) => i.inView).sort((a, b) => a.distance - b.distance)) {
+    if (out.length >= max) break;
+    if (visible(it)) out.push(it);
+  }
+  return out;
 }
