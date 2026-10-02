@@ -34,6 +34,8 @@ export function DetailCard() {
   const unitId = useUiStore((s) => s.selectedUnit);
   const model = useModelStore((s) => s.model);
   const [open, setOpen] = useState<string | null>(null);
+  const selectedDevice = useUiStore((s) => s.selectedDevice);
+  useEffect(() => { setOpen(selectedDevice); }, [selectedDevice]);
   useRefresh();
   const unit = model?.units.find((u) => u.id === unitId);
   if (!model || !unit) return null;

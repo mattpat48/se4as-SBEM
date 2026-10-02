@@ -4,22 +4,27 @@
 export interface Palette {
   sky: string; ground: string; grass: string; path: string; road: string; wall: string; core: string;
   plinth: string; slab: string; glass: string; trunk: string; leaf: string;
+  furniture: string; fabric: string; wood: string; metal: string;
+  furnitureEmission: number;
   sunColor: string; sunIntensity: number; hemiSky: string; hemiGround: string; hemiIntensity: number; exposure: number;
 }
 
 export const DAY: Palette = {
+  furniture: '#f3eee5', fabric: '#688b83', wood: '#b98c60', metal: '#687784', furnitureEmission: 0,
   sky: '#bcd7f0', ground: '#9fb88a', grass: '#7fb069', path: '#d9cdb6', road: '#555a61', wall: '#efe4d2',
   core: '#e3d6c1', plinth: '#9b958c', slab: '#d9d2c5', glass: '#7fa7c4', trunk: '#6b4f3a', leaf: '#4f8f3a',
   sunColor: '#fff4e0', sunIntensity: 3.0, hemiSky: '#ffffff', hemiGround: '#b9a58a', hemiIntensity: 1.0, exposure: 1.05,
 };
 
 export const NIGHT: Palette = {
+  furniture: '#36465e', fabric: '#23505d', wood: '#354052', metal: '#6489a1', furnitureEmission: 0.55,
   sky: '#070b16', ground: '#0d1424', grass: '#10261f', path: '#1b2438', road: '#111827', wall: '#0f172a',
   core: '#0b1222', plinth: '#0f172a', slab: '#1e293b', glass: '#1e293b', trunk: '#1f2937', leaf: '#134e4a',
   sunColor: '#93c5fd', sunIntensity: 0.35, hemiSky: '#1e3a8a', hemiGround: '#020617', hemiIntensity: 0.35, exposure: 1.1,
 };
 
 export const DATA: Palette = {
+  furniture: '#f7f5f0', fabric: '#f7f5f0', wood: '#f7f5f0', metal: '#f7f5f0', furnitureEmission: 0,
   sky: '#ece8e1', ground: '#c9a97c', grass: '#d8e4c8', path: '#f3efe7', road: '#e6e1d8', wall: '#f7f5f0',
   core: '#efece6', plinth: '#e9e5dd', slab: '#d9d2c5', glass: '#dfe7ee', trunk: '#e9e5dd', leaf: '#cfe0bf',
   sunColor: '#fff4e0', sunIntensity: 2.2, hemiSky: '#ffffff', hemiGround: '#b9a58a', hemiIntensity: 1.3, exposure: 1.0,

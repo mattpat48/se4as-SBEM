@@ -10,6 +10,7 @@ import { planBox, planWall } from './geom';
 import { DAY } from '../domain/palette';
 import { TWIN_EDGES, UNIT_BOX, UNIT_BOX_EDGES, fixedMat, mat } from './materials';
 import { registerUnit, unregisterUnit } from './registry';
+import { Furniture } from './Furniture';
 
 const APT1: PlanRect = { u0: 0, u1: 10.5, v0: 0, v1: PLAN_D };
 const APT1_PERIMETER: [number, number, number, number][] = [
@@ -40,7 +41,7 @@ function unitMaterial(color: string, faded: boolean): THREE.MeshStandardMaterial
 }
 
 /** A mesh with its own material, registered in the unit registry as shell or floor slab. */
-function UnitMesh({ unitId, part, color, faded, box }: {
+export function UnitMesh({ unitId, part, color, faded, box }: {
   unitId: string; part: 'shell' | 'floor'; color: string; faded: boolean;
   box: { position: [number, number, number]; scale: [number, number, number] };
 }) {
@@ -123,6 +124,7 @@ export function Floor({ b, floor, mode, apartments, faded, stairwellId }: FloorP
         ))}
         {b.supportsPlan && (
           <>
+            {feet.map(({ apt }) => <Furniture key={`furniture-${apt.id}`} b={b} apt={apt} faded={faded} />)}
             <mesh geometry={UNIT_BOX} material={mat('slab', faded)} {...planBox(b, CORE, y0, 0.1)} receiveShadow userData={{ unitId: stairwellId }} />
             {feet.flatMap(({ apt, mirrored }) => [...INTERIOR_WALLS, ...APT1_PERIMETER].map((w, i) => (
               <mesh key={`${apt.id}-${i}`} geometry={UNIT_BOX} material={mat('wall', faded)}

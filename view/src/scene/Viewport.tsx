@@ -4,6 +4,8 @@ import { Canvas } from '@react-three/fiber';
 import { useState } from 'react';
 import * as THREE from 'three';
 import type { ComplexLayout } from '../domain/layout';
+import { useUiStore } from '../store/ui';
+import { ApartmentInterior } from './ApartmentInterior';
 import { CameraRig } from './CameraRig';
 import { Complex } from './Complex';
 import { Hazards } from './Hazards';
@@ -15,6 +17,8 @@ import { People } from './People';
 import { Weather } from './Weather';
 
 export function Viewport({ layout }: { layout: ComplexLayout }) {
+  const inside = useUiStore((s) => s.firstPersonUnit);
+  const apt = layout.apartments.find((a) => a.id === inside);
   const [dpr, setDpr] = useState(Math.min(2, window.devicePixelRatio || 1));
   return (
     <Canvas
@@ -25,13 +29,13 @@ export function Viewport({ layout }: { layout: ComplexLayout }) {
       <PerformanceMonitor onDecline={() => setDpr((d) => Math.max(1, d - 0.5))} onIncline={() => setDpr((d) => Math.min(2, d + 0.25))} />
       <CameraRig layout={layout} />
       <Lighting />
-      <Complex layout={layout} />
+      {apt ? <ApartmentInterior layout={layout} apt={apt}/> : <Complex layout={layout} />}
       <HeatPainter layout={layout} />
       <People layout={layout} />
       <Hazards layout={layout} />
-      <Weather />
-      <Labels layout={layout} />
-      <MinimapPass />
+      {!apt && <Weather />}
+      {!apt && <Labels layout={layout} />}
+      {!apt && <MinimapPass />}
     </Canvas>
   );
 }

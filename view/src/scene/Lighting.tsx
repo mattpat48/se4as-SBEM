@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { simNowMs } from '../domain/clock';
 import { isCloudy } from '../domain/effects';
 import { DATA, DAY, NIGHT, lerpColor, mixPalette } from '../domain/palette';
+import { planToWorld } from '../domain/layout';
 import { LAQUILA, nightFactor, sunPosition } from '../domain/sun';
 import { useLiveStore } from '../store/live';
 import { useModelStore } from '../store/model';
@@ -35,6 +36,13 @@ export function Lighting() {
   const sun = useRef<THREE.DirectionalLight>(null);
   const hemi = useRef<THREE.HemisphereLight>(null);
   const { scene, gl } = useThree();
+  const inside = useUiStore((s) => s.firstPersonUnit);
+  const layout = useModelStore((s) => s.layout);
+  const focus = useMemo(() => {
+    const a = layout?.apartments.find((a) => a.id === inside);
+    const b = layout?.buildings.find((b) => b.id === a?.building);
+    return a && b ? planToWorld(b, 5.25, 6, 1.4, a.floor, a.mirrored) : { x: 0, y: 0, z: 0 };
+  }, [inside, layout]);
   const tmp = useMemo(() => ({ dir: new THREE.Vector3(), sky: new THREE.Color() }), []);
 
   useFrame(() => {
@@ -56,7 +64,17 @@ export function Lighting() {
     else tmp.dir.copy(MOON);
     const light = sun.current;
     if (light) {
-      light.position.copy(tmp.dir).multiplyScalar(SUN_DISTANCE);
+      light.target.position.set(focus.x, focus.y, focus.z);
+      light.target.updateMatrixWorld();
+      light.position.copy(tmp.dir).multiplyScalar(SUN_DISTANCE).add(light.target.position);
+      const extent = inside ? 16 : 110;
+      const shadowCamera = light.shadow.camera;
+      if (shadowCamera.right !== extent) {
+        shadowCamera.left = -extent; shadowCamera.right = extent;
+        shadowCamera.top = extent; shadowCamera.bottom = -extent;
+        shadowCamera.updateProjectionMatrix();
+      }
+      light.shadow.normalBias = inside ? .025 : .4;
       light.color.set(palette.sunColor);
       light.intensity = palette.sunIntensity;
     }

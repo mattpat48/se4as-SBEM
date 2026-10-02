@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import { useUiStore } from './store/ui';
+import { WalkOverlay } from './ui/WalkOverlay';
 import { config } from './config';
 import { connectView } from './mqtt/client';
 import { MinimapOverlay } from './scene/Minimap';
@@ -15,15 +17,17 @@ export default function App() {
   useEffect(() => connectView(config), []);
   useShortcuts();
   const layout = useModelStore((s) => s.layout);
+  const inside = useUiStore((s) => s.firstPersonUnit);
   const version = useModelStore((s) => s.version);
 
   return (
     <div className="app">
       {layout && <Viewport key={version} layout={layout} />}
       <TopBar />
-      {layout && <MinimapOverlay />}
+      {layout && !inside && <MinimapOverlay />}
+      <WalkOverlay />
       {layout && <DetailCard />}
-      {layout && <Legend />}
+      {layout && !inside && <Legend />}
       {layout && <DebugPanel />}
       <StatusBanner />
     </div>

@@ -9,6 +9,9 @@ export function useShortcuts(): void {
       const t = e.target as HTMLElement | null;
       if (t && ['INPUT', 'SELECT', 'TEXTAREA'].includes(t.tagName)) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const inside = useUiStore.getState().firstPersonUnit;
+      if (inside && ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(e.key.toLowerCase())) return;
+      if (inside && e.key === 'Escape') { useUiStore.getState().exitApartment(); return; }
       const action = shortcutAction(e.key);
       if (!action) return;
       const ui = useUiStore.getState();

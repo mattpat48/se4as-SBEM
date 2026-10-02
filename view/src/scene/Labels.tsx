@@ -5,6 +5,7 @@ import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { apartmentDevicePose } from '../domain/deviceAppearance';
 import { DEVICE_ICONS, formatValue, mainStateText } from '../domain/format';
 import { HEAT_SCALES, isHazard } from '../domain/heat';
 import { displayedValue, isStale } from '../domain/interpolate';
@@ -46,6 +47,19 @@ export function Labels({ layout }: { layout: ComplexLayout }) {
     const b = byId.get(a.building)!;
     return { apt: a, solid: planToWorld(b, 5.25, 6, b.floorHeight * 0.55, a.floor, a.mirrored), cut: planToWorld(b, 5.25, 6, 1.6, a.floor, a.mirrored) };
   }), [layout, byId]);
+  const cutDevicePositions = useMemo(() => {
+    const out = new Map<string, Vec3>();
+    for (const a of layout.apartments) {
+      const b = byId.get(a.building)!;
+      if (!b.supportsPlan) continue;
+      for (const d of layout.devices.values()) {
+        if (d.unitId !== a.id) continue;
+        const p = apartmentDevicePose(d.type);
+        if (p) out.set(d.deviceId, planToWorld(b, p.u, p.v, p.h + .18, a.floor, a.mirrored));
+      }
+    }
+    return out;
+  }, [layout, byId]);
   const devicesByUnit = useMemo(() => {
     const out = new Map<string, DevicePlacement[]>();
     for (const d of layout.devices.values()) if (d.position) out.set(d.unitId, [...(out.get(d.unitId) ?? []), d]);
@@ -69,7 +83,7 @@ export function Labels({ layout }: { layout: ComplexLayout }) {
     };
     const q = ui.heatQuantity;
     const pushDevices = (unitId: string) => {
-      for (const d of devicesByUnit.get(unitId) ?? []) push(d.deviceId, d.position!, deviceText(d, now, period, types), 'device');
+      for (const d of devicesByUnit.get(unitId) ?? []) push(d.deviceId, cut ? cutDevicePositions.get(d.deviceId) ?? d.position! : d.position!, deviceText(d, now, period, types), 'device');
     };
 
     for (const { apt, solid, cut: cutAnchor } of apartmentAnchors) {
@@ -109,7 +123,7 @@ export function Labels({ layout }: { layout: ComplexLayout }) {
       }
     }
     const picked = pickLabels(out);
-    setItems((prev) => (prev.length === picked.length && prev.every((x, i) => x.key === picked[i].key && x.text === picked[i].text) ? prev : picked));
+    setItems((prev) => (prev.length === picked.length && prev.every((x, i) => x.key === picked[i].key && x.text === picked[i].text && x.position.x === picked[i].position.x && x.position.y === picked[i].position.y && x.position.z === picked[i].position.z) ? prev : picked));
   });
 
   return (

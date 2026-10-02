@@ -104,3 +104,15 @@ test('ui defaults and clearSelection', () => {
   ui.selectUnit('A-2-1'); ui.selectDevice('A-2-1.window'); useUiStore.getState().clearSelection();
   expect([useUiStore.getState().selectedUnit, useUiStore.getState().selectedDevice]).toEqual([null, null]);
 });
+
+
+test('first-person entry and exit preserve filters and restore heat map', () => {
+  const ui = useUiStore.getState();
+  ui.enterApartment('B-2-2', 'B', 2);
+  expect(useUiStore.getState()).toMatchObject({ firstPersonUnit: 'B-2-2', building: 'B', floor: 2, mode: '3d', heatOn: false });
+  ui.exitApartment();
+  expect(useUiStore.getState()).toMatchObject({ firstPersonUnit: null, building: 'B', floor: 2, heatOn: true });
+  ui.enterApartment('A-1-1', 'A', 1);
+  ui.setMode('2d');
+  expect(useUiStore.getState()).toMatchObject({ firstPersonUnit: null, mode: '2d', heatOn: true });
+});

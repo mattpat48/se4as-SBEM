@@ -1,5 +1,15 @@
 import { DATA, DAY, NIGHT, mixPalette } from './palette';
 
+test('furniture roles follow all three palettes, with neutral paper colours in data mode', () => {
+  expect([DAY.furnitureEmission, NIGHT.furnitureEmission, DATA.furnitureEmission]).toEqual([0, 0.55, 0]);
+  for (const role of ['furniture', 'fabric', 'wood', 'metal'] as const) {
+    for (const p of [DAY, NIGHT, DATA]) expect(p[role]).toMatch(/^#[0-9a-f]{6}$/);
+    expect(DAY[role]).not.toBe(NIGHT[role]);
+    expect(DATA[role]).toBe('#f7f5f0');
+    expect(mixPalette(DAY, NIGHT, 0.5)[role]).not.toBe(DAY[role]);
+  }
+});
+
 test('mix at the ends returns copies of the inputs', () => {
   expect(mixPalette(DAY, NIGHT, 0)).toEqual(DAY);
   expect(mixPalette(DAY, NIGHT, 1)).toEqual(NIGHT);

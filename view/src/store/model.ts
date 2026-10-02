@@ -40,6 +40,7 @@ export const useModelStore = create<ModelState>()((set) => ({
     if (json === currentJson && useModelStore.getState().model !== null) return;
     currentJson = json;
     useLiveStore.getState().resetLive();
+    useUiStore.getState().exitApartment();
     useUiStore.getState().clearSelection();
     const layout = buildComplexLayout(m);
     for (const w of layout.warnings) console.warn(w);

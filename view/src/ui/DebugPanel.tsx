@@ -184,11 +184,12 @@ function ClockTab() {
 }
 
 export function DebugPanel() {
+  const inside = useUiStore((s) => s.firstPersonUnit);
   const open = useUiStore((s) => s.debugOpen);
   const tab = useUiStore((s) => s.debugTab);
   const ui = useUiStore.getState();
   if (!open) {
-    return <button className="debug-toggle" onClick={() => ui.toggleDebug()} title="Apri il pannello di debug">⌨ D = debug</button>;
+    return <button className="debug-toggle" onClick={() => ui.toggleDebug()} title="Apri il pannello di debug">{inside ? '⌨ Comandi' : '⌨ D = debug'}</button>;
   }
   return (
     <aside className="debug" aria-label="Pannello di debug">

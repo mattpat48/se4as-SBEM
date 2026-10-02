@@ -136,3 +136,17 @@ button, select, input { font: inherit; }
   .topbar__name { display: none; }
   .topbar__clock { min-width: 0; }
 }
+
+/* Interior visit controls remain reachable without locking the mouse pointer. */
+.topbar .walk-enter { background: #d8b77e; color: #172333; border-color: #d8b77e; cursor: pointer; font-weight: 600; }
+.topbar .walk-enter:disabled { opacity: .5; cursor: default; }
+.walk-heading { position: fixed; z-index: 24; top: 60px; left: 16px; display: grid; gap: 5px; max-width: calc(100vw - 32px); padding: 10px 14px; color: #e8edf3; background: rgb(15 23 42 / .82); border: 1px solid #52616e; border-radius: 10px; }
+.walk-heading span { font-size: 12px; color: #c4cfd7; }
+.walk-heading button { justify-self: start; background: none; color: #e8d2aa; border: 0; padding: 4px 0; cursor: pointer; }
+.walk-controls { position: fixed; z-index: 26; bottom: 45px; left: 16px; width: min(365px, calc(100vw - 32px)); background: rgb(15 23 42 / .85); border: 1px solid #52616e; border-radius: 10px; padding: 10px; }
+.walk-controls p { margin: 0 0 8px; font-size: 12px; color: #d5dee7; line-height: 1.45; }
+.walk-pad { display: grid; grid-template-columns: repeat(3, 48px); gap: 5px; justify-content: center; }
+.walk-pad button { height: 35px; color: #e8edf3; background: #263649; border: 1px solid #52616e; border-radius: 6px; touch-action: none; cursor: pointer; }
+.walk-pad button:active { background: #d8b77e; color: #172333; }
+.interior-device-name { display: block; white-space: nowrap; color: #f2f6fa; background: rgb(18 30 44 / .86); border: 1px solid #8a9eae; border-radius: 4px; padding: 3px 6px; font-size: 12px; }
+canvas { touch-action: none; }

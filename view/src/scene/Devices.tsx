@@ -1,4 +1,4 @@
-// Installed devices (view spec §7.3–§7.4): sensors as white pucks with a family ring, actuators
+// Installed devices (view spec §7.3–§7.4): procedural fixtures with family LEDs, actuators
 // as meshes animated from their declared state (0.5 s transitions). Clickable (selectDevice).
 import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
@@ -9,12 +9,14 @@ import {
   stairLightsVisual, valveOpen, ventTurnsPerSecond, windowAngle,
 } from '../domain/actuatorVisual';
 import type { ApartmentGeom, BuildingGeom, ComplexLayout, Vec3 } from '../domain/layout';
-import { APARTMENT_PLACEMENTS } from '../domain/placement';
-import { LIFT, PLINTH_M, ROOMS, SILL_M, TALL_WINDOW_H_M, WINDOWS, WINDOW_H_M, PLAN_D } from '../domain/plan';
+import { LIFT, PLINTH_M, SILL_M, TALL_WINDOW_H_M, WINDOWS, WINDOW_H_M, PLAN_D } from '../domain/plan';
 import { floorMode } from '../domain/visibility';
 import { useLiveStore } from '../store/live';
 import { useUiStore } from '../store/ui';
 import { approach, blink } from './anim';
+import { apartmentDevicePose, ROOM_LIGHTS } from '../domain/deviceAppearance';
+import { ApartmentSensors } from './ApartmentSensors';
+import { DeviceShell } from './DeviceShell';
 import { planLocal } from './geom';
 import { UNIT_BOX, fixedMat } from './materials';
 
@@ -49,6 +51,7 @@ function SensorPucks({ layout }: { layout: ComplexLayout }) {
     for (const d of layout.devices.values()) {
       if (d.kind !== 'sensor' || !d.position) continue;
       const apt = floorOf.get(d.unitId);
+      if (apt && byBuilding.get(apt.b)?.supportsPlan) continue;
       const bId = apt?.b ?? (d.unitId.endsWith('-S') ? d.unitId.slice(0, -2) : byBuilding.has(d.unitId) ? d.unitId : null);
       if (bId) {
         const b = byBuilding.get(bId)!;
@@ -92,11 +95,13 @@ const pipeMat = () => fixedMat('pipe', () => new THREE.MeshStandardMaterial({ co
 const handleMat = () => fixedMat('handle', () => new THREE.MeshStandardMaterial({ color: '#facc15', roughness: 0.4 }));
 
 function useEmissive(color: string) {
-  return useMemo(() => new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0, roughness: 0.4 }), [color]);
+  const material = useMemo(() => new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0, roughness: 0.4 }), [color]);
+  useLayoutEffect(() => () => material.dispose(), [material]);
+  return material;
 }
 
 /** Opening sashes and blinds on the windows of one apartment (solid floors). */
-function WindowActuators({ b, apt }: { b: BuildingGeom; apt: ApartmentGeom }) {
+export function WindowActuators({ b, apt, immersive = false }: { b: BuildingGeom; apt: ApartmentGeom; immersive?: boolean }) {
   const sashes = useRef<(THREE.Group | null)[]>([]);
   const blinds = useRef<(THREE.Mesh | null)[]>([]);
   const cur = useRef({ angle: 0, cover: 0 });
@@ -115,7 +120,7 @@ function WindowActuators({ b, apt }: { b: BuildingGeom; apt: ApartmentGeom }) {
     wins.forEach((w, i) => {
       const g = sashes.current[i];
       // The sash swings outwards: inwards it would disappear inside the opaque apartment volume.
-      if (g) { g.visible = c.angle > 0.001; g.rotation.y = -Math.sign(w.z) * c.angle; }
+      if (g) { g.visible = immersive || c.angle > 0.001; g.rotation.y = -Math.sign(w.z) * c.angle; }
       const bl = blinds.current[i];
       if (bl) {
         bl.visible = c.cover > 0.001;
@@ -140,23 +145,21 @@ function WindowActuators({ b, apt }: { b: BuildingGeom; apt: ApartmentGeom }) {
   );
 }
 
-const ROOM_LAMPS = ROOMS.filter((r, i) => ROOMS.findIndex((x) => x.id === r.id) === i)
-  .map((r) => ({ u: (r.u0 + r.u1) / 2, v: (r.v0 + r.v1) / 2 }));
-
 /** Interior devices of one apartment, shown on the cut floor. */
-function InteriorActuators({ b, apt }: { b: BuildingGeom; apt: ApartmentGeom }) {
+export function InteriorActuators({ b, apt, immersive = false }: { b: BuildingGeom; apt: ApartmentGeom; immersive?: boolean }) {
   const y0 = PLINTH_M + apt.floor * b.floorHeight;
-  const ceil = b.floorHeight - 0.3;
   const at = (type: string): [number, number, number] => {
-    const pl = APARTMENT_PLACEMENTS[type];
-    if (!pl || !('room' in pl)) return [0, 0, 0];
+    const pl = apartmentDevicePose(type, immersive);
+    if (!pl) return [0, 0, 0];
     const [x, z] = planLocal(b, pl.u, pl.v, apt.mirrored);
-    return [x, y0 + (pl.h === 'ceiling' ? ceil : pl.h), z];
+    return [x, y0 + pl.h, z];
   };
   const lampMat = useEmissive('#fde68a');
   const alarmMat = useEmissive('#ef4444');
   const flowMat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#60a5fa', transparent: true, opacity: 0.8 }), []);
   const displayMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1f2937', emissive: '#000000', roughness: 0.3 }), []);
+  useLayoutEffect(() => () => { flowMat.dispose(); displayMat.dispose(); }, [flowMat, displayMat]);
+  const roomLights = useRef<(THREE.PointLight | null)[]>([]);
   const vent = useRef<THREE.Mesh>(null);
   const handle = useRef<THREE.Mesh>(null);
   const flow = useRef<THREE.Group>(null);
@@ -168,6 +171,7 @@ function InteriorActuators({ b, apt }: { b: BuildingGeom; apt: ApartmentGeom }) 
     const c = cur.current;
     c.lamp = approach(c.lamp, lightLevel(stateOf(`${apt.id}.lights`)), dt);
     lampMat.emissiveIntensity = 2.5 * c.lamp;
+    for (const light of roomLights.current) if (light) light.intensity = 16 * c.lamp;
     alarmMat.emissiveIntensity = sirenOn(stateOf(`${apt.id}.alarm`)) ? 3 * blink(t, 2) : 0;
     if (vent.current) vent.current.rotation.y += 2 * Math.PI * ventTurnsPerSecond(stateOf(`${apt.id}.ventilation`)) * dt;
     c.handle = approach(c.handle, valveOpen(stateOf(`${apt.id}.gas_valve`)) ? 0 : Math.PI / 2, dt, Math.PI / 2);
@@ -176,7 +180,7 @@ function InteriorActuators({ b, apt }: { b: BuildingGeom; apt: ApartmentGeom }) 
     if (flow.current) {
       flow.current.visible = f !== null;
       flowMat.color.set(f === 'heat' ? '#f87171' : '#60a5fa');
-      flow.current.children.forEach((p, i) => { p.position.y = -((t * 0.8 + i / 5) % 1) * 1.4; });
+      flow.current.children.forEach((p, i) => { p.position.y = -((t * 0.8 + i / 5) % 1) * 0.85; });
     }
     const dv = displayVisual(stateOf(`${apt.id}.resident_display`));
     displayMat.emissive.set(dv.visible ? dv.color : '#000000');
@@ -184,31 +188,54 @@ function InteriorActuators({ b, apt }: { b: BuildingGeom; apt: ApartmentGeom }) 
     if (dv.visible !== display.visible || dv.message !== display.message || dv.color !== display.color) setDisplay(dv);
   });
 
-  const [hx, hy, hz] = at('hvac');
+  const turn = apt.mirrored ? Math.PI : 0;
+  const [kx, kz] = planLocal(b, 10.381, 5.65, apt.mirrored);
+  const facing = (type: string) => turn + (apartmentDevicePose(type, immersive)?.rotationY ?? 0);
   return (
     <group>
-      {ROOM_LAMPS.map((l, i) => {
+      {ROOM_LIGHTS.map((l, i) => {
         const [x, z] = planLocal(b, l.u, l.v, apt.mirrored);
-        return <mesh key={i} material={lampMat} position={[x, y0 + CUT_LAMP_Y, z]} userData={{ deviceId: `${apt.id}.lights` }}><sphereGeometry args={[0.18, 12, 8]} /></mesh>;
+        return <group key={l.room} position={[x, y0 + (immersive ? l.h : .8), z]} rotation={[0, turn + l.rotationY, 0]} userData={{ deviceId: `${apt.id}.lights` }}>
+          <DeviceShell type="light" />
+          <mesh geometry={UNIT_BOX} material={lampMat} position={[0, 0, .06]} scale={[.16, .2, .04]} />
+          {immersive && <pointLight ref={(p) => { roomLights.current[i] = p; }} position={[0, 0, .3]} intensity={0} distance={8} decay={2} color="#ffe5b6" />}
+        </group>;
       })}
-      <group userData={{ deviceId: `${apt.id}.hvac` }}>
-        <mesh geometry={UNIT_BOX} material={deviceMat()} position={[hx, Math.min(hy, y0 + CUT_LAMP_Y), hz]} scale={[0.9, 0.3, 0.25]} />
-        <group ref={flow} position={[hx, Math.min(hy, y0 + CUT_LAMP_Y) - 0.2, hz]} visible={false}>
+      <group position={at('hvac')} rotation={[0, facing('hvac'), 0]} userData={{ deviceId: `${apt.id}.hvac` }}>
+        <DeviceShell type="hvac" />
+        <group ref={flow} position={[0, -0.2, 0.15]} visible={false}>
           {Array.from({ length: 5 }, (_, i) => <mesh key={i} material={flowMat} position={[(i - 2) * 0.15, 0, 0]}><sphereGeometry args={[0.05, 6, 4]} /></mesh>)}
         </group>
       </group>
-      <mesh ref={vent} material={deviceMat()} position={[at('ventilation')[0], y0 + CUT_LAMP_Y, at('ventilation')[2]]} userData={{ deviceId: `${apt.id}.ventilation` }}>
-        <boxGeometry args={[0.5, 0.05, 0.12]} />
-      </mesh>
-      <group position={at('gas_valve')} userData={{ deviceId: `${apt.id}.gas_valve` }}>
-        <mesh material={pipeMat()} rotation={[0, 0, 0]}><cylinderGeometry args={[0.04, 0.04, 0.6, 8]} /></mesh>
-        <mesh ref={handle} geometry={UNIT_BOX} material={handleMat()} position={[0, 0.06, 0]} scale={[0.05, 0.05, 0.3]} />
+      <group position={at('ventilation')} rotation={[0, facing('ventilation'), 0]} userData={{ deviceId: `${apt.id}.ventilation` }}>
+        <group rotation={[Math.PI / 2, 0, 0]}>
+        <DeviceShell type="ventilation" />
+        <mesh ref={vent} material={deviceMat()}>
+          <boxGeometry args={[0.34, 0.025, 0.07]} />
+          <mesh geometry={UNIT_BOX} material={deviceMat()} scale={[0.07, 0.025, 0.34]} />
+        </mesh>
       </group>
-      <mesh material={alarmMat} position={[at('alarm')[0], y0 + CUT_LAMP_Y, at('alarm')[2]]} userData={{ deviceId: `${apt.id}.alarm` }}>
-        <sphereGeometry args={[0.15, 12, 8]} />
-      </mesh>
-      <group position={[at('resident_display')[0], Math.min(at('resident_display')[1], y0 + 1.0), at('resident_display')[2]]} userData={{ deviceId: `${apt.id}.resident_display` }}>
-        <mesh geometry={UNIT_BOX} material={displayMat} scale={[0.3, 0.2, 0.3]} />
+      </group>
+      <group position={at('gas_valve')} rotation={[0, turn, 0]} userData={{ deviceId: `${apt.id}.gas_valve` }}>
+        <mesh material={handleMat()} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.035, 0.035, 0.6, 8]} /></mesh>
+        <mesh material={pipeMat()}><sphereGeometry args={[0.065, 10, 6]} /></mesh>
+        <mesh ref={handle} geometry={UNIT_BOX} material={handleMat()} position={[0, 0.085, 0]} scale={[0.075, 0.04, 0.24]}>
+          <mesh geometry={UNIT_BOX} material={pipeMat()} scale={[0.8, 1.2, 0.17]} />
+        </mesh>
+      </group>
+      <group position={at('alarm')} rotation={[0, facing('alarm'), 0]} userData={{ deviceId: `${apt.id}.alarm` }}>
+        <group rotation={[Math.PI / 2, 0, 0]}><DeviceShell type="alarm" />
+        <mesh material={alarmMat} position={[0.06, 0.065, 0.07]}><sphereGeometry args={[0.075, 12, 8]} /></mesh></group>
+      </group>
+      <group position={[kx, y0 + (immersive ? 1.45 : .9), kz]} rotation={[0, turn - Math.PI / 2, 0]} userData={{ deviceId: `${apt.id}.alarm` }}>
+        <DeviceShell type="keypad" />
+      </group>
+      <group position={at('water_flow')} rotation={[0, turn - Math.PI / 2, 0]} userData={{ unitId: apt.id }}>
+        <DeviceShell type="meters" />
+      </group>
+      <group position={at('resident_display')} rotation={[0, turn - Math.PI / 2, 0]} userData={{ deviceId: `${apt.id}.resident_display` }}>
+        <DeviceShell type="resident_display" />
+        <mesh geometry={UNIT_BOX} material={displayMat} position={[0, 0, 0.02]} scale={[0.25, 0.15, 0.008]} />
         {display.visible && (
           <Html center position={[0, 0.5, 0]} style={{ pointerEvents: 'none' }} zIndexRange={[16, 0]}>
             <div className="label" style={{ background: display.color, color: '#0f172a', borderColor: 'transparent' }}>📟 {display.message}</div>
@@ -218,9 +245,6 @@ function InteriorActuators({ b, apt }: { b: BuildingGeom; apt: ApartmentGeom }) 
     </group>
   );
 }
-
-/** Devices on the cut floor sit below the 1.1 m walls' view line only where it matters: keep them readable. */
-const CUT_LAMP_Y = 1.25;
 
 // ---------------------------------------------------------------- stairwell and building
 function StairwellActuators({ b, cutFloor, roofVisible }: { b: BuildingGeom; cutFloor: number | null; roofVisible: boolean }) {
@@ -242,20 +266,22 @@ function StairwellActuators({ b, cutFloor, roofVisible }: { b: BuildingGeom; cut
     if (lid.current) lid.current.rotation.x = -cur.current.lid * (Math.PI / 3);
   });
 
-  const [lx, lz] = planLocal(b, 13, 6.5);
-  const [sx, sz] = planLocal(b, 11, 6.5);
+  const [lx, lz] = planLocal(b, 10.66, 6.5);
+  const [sx, sz] = planLocal(b, 10.65, 7.15);
   const [vx, vz] = planLocal(b, 13, 2.5);
   const roofY = PLINTH_M + b.floors * b.floorHeight + 0.3;
   return (
     <group>
       {floors.map((f) => (
         <group key={f}>
-          <mesh material={lamps} position={[lx, PLINTH_M + f * b.floorHeight + CUT_LAMP_Y, lz]} userData={{ deviceId: `${id}.stair_lights` }}>
-            <sphereGeometry args={[0.22, 12, 8]} />
-          </mesh>
-          <mesh material={siren} position={[sx, PLINTH_M + f * b.floorHeight + CUT_LAMP_Y, sz]} userData={{ deviceId: `${id}.evacuation_siren` }}>
-            <sphereGeometry args={[0.16, 12, 8]} />
-          </mesh>
+          <group position={[lx, PLINTH_M + f * b.floorHeight + .8, lz]} rotation={[0, Math.PI / 2, 0]} userData={{ deviceId: `${id}.stair_lights` }}>
+            <DeviceShell type="light" />
+            <mesh geometry={UNIT_BOX} material={lamps} position={[0, 0, .06]} scale={[.16, .2, .04]} />
+          </group>
+          <group position={[sx, PLINTH_M + f * b.floorHeight + .9, sz]} rotation={[0, Math.PI / 2, 0]} userData={{ deviceId: `${id}.evacuation_siren` }}>
+            <mesh geometry={UNIT_BOX} material={deviceMat()} scale={[.26, .28, .08]} />
+            <mesh geometry={UNIT_BOX} material={siren} position={[0, .05, .06]} scale={[.18, .07, .05]} />
+          </group>
         </group>
       ))}
       {roofVisible && (
@@ -380,6 +406,7 @@ export function Devices({ layout }: { layout: ComplexLayout }) {
   return (
     <group>
       <SensorPucks layout={layout} />
+      <ApartmentSensors layout={layout} />
       {layout.buildings.map((b) => (
         <BuildingDevices key={b.id} b={b} apartments={layout.apartments.filter((a) => a.building === b.id)} />
       ))}

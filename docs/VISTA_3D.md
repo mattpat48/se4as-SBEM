@@ -65,6 +65,9 @@ La vista è **solo una vista**: nessuna logica di simulazione al suo interno. Le
 | V17 | 2026-09-30 | **La scena mostra solo ciò che dicono i dati**: fumo, fuoco, gas, sisma e pulsazione rossa derivano dai sensori e dagli stati, con soglie solo visive; `Complex/scenarios` serve solo per l'elenco nella barra. Con la mappa di calore spenta le emergenze pulsano comunque | Ciò che si vede è ciò che vedrebbe il Monitor: la vista non "sa" in anticipo cosa succede |
 | V18 | 2026-09-30 | **Sei tappe** (sezione 3) e **copione della demo** della fase 1 di circa 4 minuti (specifica §13) | Ogni tappa ha un risultato verificabile; il pannello di debug arriva presto (T3) per provare gli attuatori nelle tappe successive |
 
+| V19 | 2026-10-01 | **Arredi di base e dispositivi realistici come scenografia**: geometrie procedurali, arredi solo sul piano tagliato, interni ruotati di 180°, ingombri e passaggi verificati con test. Sensori con forme dedicate e LED di famiglia; animazioni e identificatori dei dispositivi conservati | Eccezione esplicita a V7 («niente decorazioni senza dati») per migliorare l’immersione nella demo: la scenografia non rappresenta nuovi dati né decide azioni. Meno del 40% del pavimento di ogni stanza è coperto; la mappa di calore resta leggibile. Quattro geometrie unite per appartamento, materiali condivisi giorno/notte/dati, nessuna luce aggiuntiva |
+| V20 | 2026-10-02 | **Modelli 3D esterni per arredi e persone** (supera la parte di V0 "nessun modello 3D esterno" e le geometrie procedurali di V19): **arredi Kenney Furniture Kit** (CC0) adattati agli ingombri già definiti in `domain/furniture.ts`; **residenti Quaternius "Ultimate Modular"** già vestiti (CC0), animati. Nello spaccato i **muri restano interi** (circa 2,9 m) invece che tagliati a 1,1 m. **Pavimento in legno** di base; con la mappa di calore attiva il pavimento prende il colore del dato. La caldaia resta disegnata a codice (il pacchetto non la contiene) | Prova usa e getta del 2026-10-02: aspetto molto migliore delle forme procedurali, stile low-poly coerente tra arredi e persone, licenze CC0 verificate nei file dei pacchetti. I personaggi base Quaternius "Universal" sono stati scartati perché privi di vestiti (gli abiti abbinati sono solo fantasy) |
+
 ---
 
 ## 3. Piano delle tappe (fase 1)
@@ -115,6 +118,20 @@ docker exec iot_mosquitto mosquitto_pub -u admin -P adminpassword123 -t Complex/
 ### 3.2 Verifica a vista
 
 Ripercorsa il 2026-10-01 nel browser (container su :8080 e server di sviluppo su :5173), insieme al copione della demo (specifica §13). ✅ = visto; ☐ = da ricontrollare a occhio alla prossima prova.
+
+**Arredi e dispositivi realistici (V19)**
+
+- [x] Palazzo A, Piano 2: cucina, divano, pranzo con quattro sedie, camere, bagni e ingresso arredati nei due interni, ruotati di 180°; arredi da balcone dal primo piano
+- [x] Planimetria 2D (`2`): disposizione leggibile dall’alto e passaggi liberi; i test controllano anche i dodici posti delle persone
+- [x] Giorno e modalità dati (`M`): materiali caldi e tessuti di giorno, bianco carta in modalità dati
+- [x] Notte alle 22:00 (`D` → Orologio): materiali blu scuro con tenue emissione, senza luci nuove; mappa di calore leggibile
+- [x] Clic sulla sirena nella scena: scheda di A-2-1 e selezione di `A-2-1.alarm` nel debug; gli arredi lasciano passare il puntatore
+- [x] Rotazione della camera con otto appartamenti arredati: misura locale di 5 s, circa 120 FPS, 95° percentile degli intervalli 8,8 ms nel browser integrato a 639 × 998 pixel; non è una garanzia su altri portatili o risoluzioni
+- [ ] Ricontrollare da vicino tutte le animazioni dei nuovi involucri (girante VMC, valvola aperta/chiusa, display con i tre livelli); nella sessione sono stati provati i comandi `alarm` e `hvac` in `cool`, poi ripristinati
+
+Gli arredi usano 33 ingombri conservativi per interno, di cui tre sul balcone (30 al piano terra). Anche i dettagli delle geometrie sono verificati rispetto agli ingombri e all’altezza di 1,1 m. Il basamento del pavimento di 0,12 m è incluso nell’altezza. Armadi, docce, caldaia e appendiabiti sono rappresentati in sezione; la doccia usa il telaio del vetro per lasciare leggibile il pavimento. Tappeti piccoli, senza sovrapposizioni. Le persone mantengono tutti i posti originali.
+
+I dispositivi mantengono il contratto di `placement.ts`: soltanto la resa dello spaccato abbassa soffitto e split a 1,25 m, e i dispositivi a parete a un massimo di 1 m. Non vengono modificati coordinate di pianta, modello o messaggi. Il quadro contatori è unico, con tre strumenti selezionabili individualmente; la tastiera richiama lo stesso dispositivo della sirena. Le geometrie e i materiali locali vengono liberati allo smontaggio, i materiali condivisi seguono la palette esistente. Nessun modello esterno, texture scaricata o nuova dipendenza.
 
 **Attuatori (specifica §7.4)**
 
@@ -200,3 +217,5 @@ Ripercorsa il 2026-10-01 nel browser (container su :8080 e server di sviluppo su
 | 2026-09-30 | Tappa T4 completata: mappa di calore interpolata con legenda, etichette per livello di zoom, selezione e scheda di dettaglio con storico breve, attuatori animati, persone e auto |
 | 2026-09-30 | Tappa T5 completata: sole dell'Aquila dall'ora simulata e passaggio giorno → digital twin notturno, modalità dati, pioggia, vento e nuvole, fumo, fuoco, gas, CO e scossa del sisma derivati dai sensori |
 | 2026-10-01 | Tappa T6 completata: guida d'avvio e verifica a vista (sezioni 3.1–3.2), README e `MONITOR.md` aggiornati, copione della demo provato da capo a fondo; fase 1 disponibile |
+| 2026-10-01 | V19: arredi procedurali sul piano tagliato e dispositivi realistici, con palette giorno/notte/dati e selezione preservata; TDD su ingombri, passaggi, persone, superficie libera, altezze reali delle geometrie e sensori nei quattro palazzi. Verifica 2D/3D e misura FPS locale; 122 test, controllo TypeScript e build superati |
+| 2026-10-02 | Prova usa e getta di modelli esterni; decisione V20: arredi Kenney, residenti Quaternius vestiti, muri interi nello spaccato, pavimento in legno o colore della mappa di calore |

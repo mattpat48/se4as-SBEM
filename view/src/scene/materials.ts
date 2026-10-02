@@ -3,8 +3,10 @@
 import * as THREE from 'three';
 import { DAY, type Palette } from '../domain/palette';
 
-export type Role = 'ground' | 'grass' | 'path' | 'road' | 'wall' | 'core' | 'plinth' | 'slab' | 'glass' | 'trunk' | 'leaf';
-const ROLES: Role[] = ['ground', 'grass', 'path', 'road', 'wall', 'core', 'plinth', 'slab', 'glass', 'trunk', 'leaf'];
+export type FurnitureRole = 'furniture' | 'fabric' | 'wood' | 'metal';
+export type Role = 'ground' | 'grass' | 'path' | 'road' | 'wall' | 'core' | 'plinth' | 'slab' | 'glass' | 'trunk' | 'leaf' | FurnitureRole;
+const ROLES: Role[] = ['ground', 'grass', 'path', 'road', 'wall', 'core', 'plinth', 'slab', 'glass', 'trunk', 'leaf', 'furniture', 'fabric', 'wood', 'metal'];
+const FURNITURE_ROLES: readonly Role[] = ['furniture', 'fabric', 'wood', 'metal'];
 
 function make(faded: boolean): Record<Role, THREE.MeshStandardMaterial> {
   const out = {} as Record<Role, THREE.MeshStandardMaterial>;
@@ -29,7 +31,13 @@ export function mat(role: Role, faded = false): THREE.MeshStandardMaterial {
 
 export function applyPalette(p: Palette): void {
   for (const set of [MATERIALS.normal, MATERIALS.faded])
-    for (const r of ROLES) set[r].color.set(p[r]);
+    for (const r of ROLES) {
+      set[r].color.set(p[r]);
+      if (FURNITURE_ROLES.includes(r)) {
+        set[r].emissive.set(p[r]);
+        set[r].emissiveIntensity = p.furnitureEmission;
+      }
+    }
 }
 
 applyPalette(DAY);

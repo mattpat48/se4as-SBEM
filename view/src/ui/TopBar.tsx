@@ -5,6 +5,7 @@ import { HEAT_SCALES, type HeatQuantity } from '../domain/heat';
 import { useConnectionStore } from '../store/connection';
 import { useLiveStore } from '../store/live';
 import { useModelStore } from '../store/model';
+import { chooseWalkApartment } from '../domain/walk';
 import { useUiStore } from '../store/ui';
 
 function useClockLabel(): string {
@@ -65,6 +66,9 @@ export function TopBar() {
   const heatQuantity = useUiStore((s) => s.heatQuantity);
   const heatOn = useUiStore((s) => s.heatOn);
   const dataMode = useUiStore((s) => s.dataMode);
+  const inside = useUiStore((s) => s.firstPersonUnit);
+  const selectedUnit = useUiStore((s) => s.selectedUnit);
+  const entry = layout ? chooseWalkApartment(layout, selectedUnit, building, floor) : null;
   const ui = useUiStore.getState();
   const clock = useClockLabel();
   const floors = Math.max(0, ...buildings.map((b) => b.floors));
@@ -74,17 +78,18 @@ export function TopBar() {
       <strong className="topbar__name">{name}</strong>
       <span className="topbar__clock">{clock}</span>
       <div className="segmented" role="group" aria-label="Modalità">
-        <button className={mode === '3d' ? 'is-on' : ''} onClick={() => ui.setMode('3d')} title="3 = vista 3D">3D</button>
+        <button className={mode === '3d' && !inside ? 'is-on' : ''} onClick={() => ui.setMode('3d')} title="3 = vista 3D">3D</button>
         <button className={mode === '2d' ? 'is-on' : ''} onClick={() => ui.setMode('2d')} title="2 = planimetria 2D">2D</button>
       </div>
+      <button className={`walk-enter ${inside ? 'is-on' : ''}`} disabled={!inside && !entry} onClick={() => { if (inside) ui.exitApartment(); else if (entry) ui.enterApartment(entry.id, entry.building, entry.floor); }}>{inside ? 'Esci dalla casa' : 'Entra in casa'}</button>
       <label className="topbar__field">Palazzo
-        <select value={building ?? ''} onChange={(e) => ui.setBuilding(e.target.value || null)}>
+        <select disabled={!!inside} value={building ?? ''} onChange={(e) => ui.setBuilding(e.target.value || null)}>
           <option value="">Tutti</option>
           {buildings.map((b) => <option key={b.id} value={b.id}>{b.id}</option>)}
         </select>
       </label>
       <label className="topbar__field">Piano
-        <select value={floor ?? ''} onChange={(e) => ui.setFloor(e.target.value === '' ? null : Number(e.target.value))}>
+        <select disabled={!!inside} value={floor ?? ''} onChange={(e) => ui.setFloor(e.target.value === '' ? null : Number(e.target.value))}>
           {mode === '3d' && <option value="">Tutti</option>}
           {Array.from({ length: floors }, (_, f) => <option key={f} value={f}>{f === 0 ? 'T' : f}</option>)}
         </select>

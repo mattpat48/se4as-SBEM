@@ -27,7 +27,7 @@ export function pickTarget(e: ThreeEvent<MouseEvent>): { unitId: string; deviceI
   return null;
 }
 
-function onPick(e: ThreeEvent<MouseEvent>) {
+export function onPick(e: ThreeEvent<MouseEvent>) {
   if (e.delta > 4) return;                        // a drag of the camera, not a click
   const t = pickTarget(e);
   if (!t) return;
