@@ -1,97 +1,108 @@
 import time
-from collections import defaultdict, deque
-from datastructure import THRESHOLDS
-from influxdb_client import Point, WritePrecision
-from rules import evaluate_all
+import json
+import logging
+from collections import defaultdict
+from rules import calculate_comfort, evaluate_risks
 
+logger = logging.getLogger(__name__)
 
 class AnalyzerEngine:
-    def __init__(self, influx_write_api=None, influx_bucket=None, influx_org=None, history_window_seconds=300):
-        self.influx_write_api = influx_write_api
-        self.influx_bucket = influx_bucket
-        self.influx_org = influx_org
+    def __init__(self):
+        self.model = {}
+        # current_state: area -> unit_id -> type -> value
+        self.current_state = defaultdict(lambda: defaultdict(dict))
+        self.health_state = defaultdict(lambda: defaultdict(dict))
+        self.last_analysis_time = 0
 
-        # history: {(location, type): deque([...])}
-        self.history = defaultdict(lambda: deque(maxlen=1000))
-        # grouped by location -> type -> deque of samples
-        self.history_by_location = defaultdict(lambda: defaultdict(lambda: deque(maxlen=1000)))
+    def update_model(self, model):
+        self.model = model
+        logger.info("Model updated in Analyzer")
 
-        # keep simple active_alerts similar to previous implementation
-        self.active_alerts = {}
-        self.history_window_seconds = history_window_seconds
+    def process_monitored(self, client, topic, payload):
+        parts = topic.split('/')
+        if len(parts) < 5:
+            return
+            
+        area = parts[2]
+        unit_id = parts[3]
+        typ = parts[4]
+        
+        # Store latest valid state
+        if payload.get("quality", "ok") == "ok":
+            if "value" in payload:
+                self.current_state[area][unit_id][typ] = payload["value"]
+            # For actuators, store state too if needed
+            elif payload.get("kind") == "actuator":
+                self.current_state[area][unit_id][typ] = payload
 
-    def _add_sample(self, location, data):
-        # sample: value and timestamp (epoch seconds, as sent by the sensor)
-        try:
-            ts = float(data.timestamp)
-        except Exception:
-            ts = time.time()
-        sample = {'value': float(data.value), 'timestamp': ts}
-        self.history[(location, data.type)].append(sample)
-        self.history_by_location[location][data.type].append(sample)
+    def process_health(self, client, topic, payload):
+        parts = topic.split('/')
+        if len(parts) < 5:
+            return
+            
+        area = parts[2]
+        unit_id = parts[3]
+        typ = parts[4]
+        
+        self.health_state[area][unit_id][typ] = payload.get("status", "ok")
 
-        # prune by time window
-        cutoff = int(time.time()) - self.history_window_seconds
-        for t, dq in list(self.history.items()):
-            while dq and dq[0]['timestamp'] < cutoff:
-                dq.popleft()
+    def run_periodic_analysis(self, client):
+        current_time = time.time()
+        
+        # Process each unit independently
+        for area, units in self.current_state.items():
+            area_comfort_sum = 0
+            area_comfort_count = 0
+            area_risks = []
+            
+            for unit_id, sensors in units.items():
+                if area == "park" or area == "complex":
+                    continue # Comfort mainly for indoor spaces
+                    
+                # 1. Calculate Comfort
+                comfort_score, comfort_details = calculate_comfort(sensors)
+                if comfort_score is not None:
+                    area_comfort_sum += comfort_score
+                    area_comfort_count += 1
+                    
+                    payload = {
+                        "area": area,
+                        "unit_id": unit_id,
+                        "comfort_score": comfort_score,
+                        "details": comfort_details,
+                        "timestamp": current_time
+                    }
+                    client.publish(f"Complex/analysis/{area}/{unit_id}/comfort", json.dumps(payload), retain=True)
 
-        for loc, types in self.history_by_location.items():
-            for typ, dq in types.items():
-                while dq and dq[0]['timestamp'] < cutoff:
-                    dq.popleft()
-
-    def process(self, client, location, data):
-        """Process a new SensorData instance: threshold check, composite rules, persistence."""
-        self._add_sample(location, data)
-
-        # Threshold check
-        threshold = THRESHOLDS.get(data.type)
-        is_alerting = self.active_alerts.get(data.sensorid, False)
-        if threshold is not None:
-            if float(data.value) > float(threshold):
-                if not is_alerting:
-                    alert_msg = f"⚠️ ALERT: {data.sensorid} ({data.type}) at {location} detected {data.value:.2f} {data.unit} (Threshold: {threshold})"
-                    client.publish(f"City/alerts/{location}/{data.type}", alert_msg, qos=1)
-                    self.active_alerts[data.sensorid] = True
-            else:
-                if is_alerting:
-                    alert_msg = f"✅ RECOVERY: {data.sensorid} ({data.type}) at {location} returned to normal {data.value:.2f} {data.unit}"
-                    client.publish(f"City/alerts/{location}/{data.type}", alert_msg, qos=1)
-                    self.active_alerts[data.sensorid] = False
-
-        # Composite rules
-        types_map = self.history_by_location[location]
-        results = evaluate_all(types_map, location)
-        for r in results:
-            # publish composite alert
-            msg = {
-                'rule': r.name,
-                'score': r.score,
-                'details': r.details,
-                'location': location,
-                'timestamp': int(time.time())
-            }
-            client.publish(f"City/alerts/{location}/composite", json_dumps(msg), qos=1)
-
-            # persist emergency to InfluxDB
-            try:
-                if self.influx_write_api is not None:
-                    p = Point("emergencies").tag("type", r.name).tag("location", location).field("score", float(r.score)).time(int(time.time() * 1e9), WritePrecision.NS)
-                    # add details as fields (where numeric)
-                    for k, v in r.details.items():
-                        try:
-                            p.field(k, float(v))
-                        except Exception:
-                            pass
-                    self.influx_write_api.write(bucket=self.influx_bucket, org=self.influx_org, record=p)
-            except Exception as e:
-                print(f"Error writing emergency to InfluxDB: {e}")
-
-
-def json_dumps(obj):
-    try:
-        import json
-        return json.dumps(obj)
-    except Exception:
-        return str(obj)
+                # 2. Evaluate Risks
+                risks = evaluate_risks(sensors, self.model)
+                for risk in risks:
+                    area_risks.append(risk)
+                    payload = {
+                        "area": area,
+                        "unit_id": unit_id,
+                        "risk": risk["name"],
+                        "severity": risk["severity"],
+                        "details": risk["details"],
+                        "timestamp": current_time
+                    }
+                    client.publish(f"Complex/analysis/{area}/{unit_id}/risk/{risk['name']}", json.dumps(payload), retain=True)
+            
+            # 3. Hierarchical Aggregation for Building (area)
+            if area_comfort_count > 0:
+                avg_comfort = area_comfort_sum / area_comfort_count
+                payload = {
+                    "area": area,
+                    "average_comfort": avg_comfort,
+                    "timestamp": current_time
+                }
+                client.publish(f"Complex/analysis/{area}/aggregate/comfort", json.dumps(payload), retain=True)
+                
+            if area_risks:
+                # Deduplicate or aggregate risks if needed
+                payload = {
+                    "area": area,
+                    "active_risks": area_risks,
+                    "timestamp": current_time
+                }
+                client.publish(f"Complex/analysis/{area}/aggregate/risks", json.dumps(payload), retain=True)

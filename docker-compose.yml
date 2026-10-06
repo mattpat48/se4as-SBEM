@@ -186,8 +186,27 @@ services:
     restart: unless-stopped
     networks:
       - iot_net
+  # 10. Monitor (fase M del MAPE-K)
+  monitor:
+    build: ./monitor
+    container_name: iot_monitor
+    depends_on:
+      - mosquitto
+      - influxdb
+    environment:
+      - MQTT_BROKER=${MQTT_BROKER}
+      - MQTT_PORT=${MQTT_PORT}
+      - MQTT_USERNAME=${MQTT_USERNAME}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+      - INFLUXDB_URL=${INFLUXDB_URL}
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+      - INFLUXDB_ORG=${INFLUXDB_ORG}
+      - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
+    restart: unless-stopped
+    networks:
+      - iot_net
 
-  # 10. 3D view (static React Three Fiber app; the browser connects to Mosquitto via WebSocket)
+  # 11. 3D view (static React Three Fiber app; the browser connects to Mosquitto via WebSocket)
   view:
     build: ./view
     container_name: iot_view

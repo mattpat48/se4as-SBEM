@@ -1,99 +1,85 @@
 import time
 import os
 import json
+import logging
 import paho.mqtt.client as mqtt
-from datastructure import SensorData, THRESHOLDS
+from paho.mqtt.enums import CallbackAPIVersion
 from datetime import datetime
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from engine import AnalyzerEngine
 
-# Load environment variables
-mqtt_broker = os.getenv("MQTT_BROKER", "mosquitto")
-mqtt_user = os.getenv("MQTT_USERNAME")
-mqtt_password = os.getenv("MQTT_PASSWORD")
-influx_url = os.getenv("INFLUXDB_URL", "http://influxdb:8086")
-influx_token = os.getenv("INFLUXDB_TOKEN", "my-super-secret-auth-token")
-influx_org = os.getenv("INFLUXDB_ORG", "iot_org")
-influx_bucket = os.getenv("INFLUXDB_BUCKET", "iot_bucket")
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+logger = logging.getLogger("analyzer")
 
-print(f"Analyzer container started. Connecting to {mqtt_broker}...", flush=True)
+def main():
+    mqtt_broker = os.getenv("MQTT_BROKER", "mosquitto")
+    mqtt_user = os.getenv("MQTT_USERNAME")
+    mqtt_password = os.getenv("MQTT_PASSWORD")
+    mqtt_port = int(os.getenv("MQTT_PORT", 1883))
+    
+    influx_url = os.getenv("INFLUXDB_URL", "http://influxdb:8086")
+    influx_token = os.getenv("INFLUXDB_TOKEN", "admin_token")
+    influx_org = os.getenv("INFLUXDB_ORG", "iot_org")
+    influx_bucket = os.getenv("INFLUXDB_BUCKET", "iot_bucket")
 
-# Dictionary to track the alert state of each sensor: {sensor_id: bool}
-active_alerts = {}
+    logger.info(f"Analyzer starting. Connecting to {mqtt_broker}...")
 
-# Initialize InfluxDB client for persisting thresholds and emergencies
-try:
-    influx_client = InfluxDBClient(url=influx_url, token=influx_token, org=influx_org)
-    influx_write_api = influx_client.write_api()
-    print("InfluxDB client initialized", flush=True)
-except Exception as e:
-    influx_client = None
-    influx_write_api = None
-    print(f"Warning: could not initialize InfluxDB client: {e}", flush=True)
+    engine = AnalyzerEngine()
 
-# Initialize AnalyzerEngine with Influx write API
-engine = AnalyzerEngine(influx_write_api=influx_write_api, influx_bucket=influx_bucket, influx_org=influx_org)
+    def on_connect(client, userdata, flags, rc, properties):
+        logger.info(f"Connected to MQTT broker with result code {rc}")
+        client.subscribe("Complex/monitored/#")
+        client.subscribe("Complex/health/#")
+        client.subscribe("Complex/model")
+        
+        # We don't subscribe to City/data anymore
 
-def on_connect(client, userdata, flags, rc):
-    print(f"Connected with result code {rc}", flush=True)
-    client.subscribe([("City/data/#", 0), ("City/update/thresholds", 1)])
-
-def on_message(client, userdata, msg):
-    try:
-        # Handle Configuration Updates
-        if msg.topic == "City/update/thresholds":
-            payload = json.loads(msg.payload.decode())
-            if "thresholds" in payload:
-                print(f"Updating thresholds: {payload['thresholds']}", flush=True)
-                THRESHOLDS.update(payload["thresholds"])
-                # Persist thresholds to InfluxDB (measurement: thresholds)
-                try:
-                    if influx_write_api is not None:
-                        for tname, tval in payload["thresholds"].items():
-                            p = Point("thresholds").tag("type", str(tname)).field("value", float(tval)).time(datetime.utcnow(), WritePrecision.NS)
-                            influx_write_api.write(bucket=influx_bucket, org=influx_org, record=p)
-                        # publish a confirmation message
-                        client.publish("City/alerts/config", json.dumps({"status": "thresholds_updated", "thresholds": payload["thresholds"]}), qos=1)
-                except Exception as e:
-                    print(f"Error writing thresholds to InfluxDB: {e}", flush=True)
-            return
-
-        # Ignore everything except sensor telemetry
-        if not msg.topic.startswith("City/data/"):
-            return
-
-        # Extract location from topic (City/Location/Type)
-        topic_parts = msg.topic.split("/")
-        location = topic_parts[2] if len(topic_parts) > 1 else "Unknown"
-
-        # Decoding using pre-defined structure
-        payload_str = msg.payload.decode()
-        data = SensorData.from_json(payload_str)
-
-        print(f"Analyzing: {data.sensorid} ({data.type}) -> {data.value:.2f}", flush=True)
-
-        # Delegate processing to AnalyzerEngine (thresholds, composite rules, persistence)
+    def on_message(client, userdata, msg):
         try:
-            engine.process(client, location, data)
-        except Exception as e:
-            print(f"Engine processing error: {e}", flush=True)
+            payload = json.loads(msg.payload.decode())
+            topic = msg.topic
             
-    except Exception as e:
-        print(f"Error processing message: {e}", flush=True)
+            if topic == "Complex/model":
+                engine.update_model(payload)
+                return
 
-client = mqtt.Client()
-client.on_connect = on_connect
-client.on_message = on_message
+            if topic.startswith("Complex/monitored/"):
+                engine.process_monitored(client, topic, payload)
+                
+            elif topic.startswith("Complex/health/"):
+                engine.process_health(client, topic, payload)
 
-if mqtt_user and mqtt_password:
-    client.username_pw_set(mqtt_user, mqtt_password)
+        except Exception as e:
+            logger.error(f"Error processing message on {msg.topic}: {e}")
 
-while True:
+    client = mqtt.Client(CallbackAPIVersion.VERSION2, client_id="iot_analyzer")
+    if mqtt_user and mqtt_password:
+        client.username_pw_set(mqtt_user, mqtt_password)
+        
+    client.on_connect = on_connect
+    client.on_message = on_message
+
+    connected = False
+    while not connected:
+        try:
+            client.connect(mqtt_broker, mqtt_port, 60)
+            connected = True
+        except Exception as e:
+            logger.error(f"Connection failed: {e}. Retrying in 5s...")
+            time.sleep(5)
+
+    client.loop_start()
+
     try:
-        client.connect(mqtt_broker, 1883, 60)
-        break
-    except Exception as e:
-        print(f"Connection failed: {e}. Retrying in 5s...", flush=True)
-        time.sleep(5)
+        while True:
+            time.sleep(5)
+            # Run periodic analysis (Comfort, Risks, Aggregation)
+            engine.run_periodic_analysis(client)
+    except KeyboardInterrupt:
+        logger.info("Shutting down analyzer...")
+    finally:
+        client.loop_stop()
+        client.disconnect()
 
-client.loop_forever()
+if __name__ == "__main__":
+    main()
