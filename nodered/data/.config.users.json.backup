@@ -14,7 +14,7 @@
                 "view-show-welcome-tours": true
             },
             "tours": {
-                "welcome": "4.1.4"
+                "welcome": "5.0.1"
             }
         },
         "debug": {

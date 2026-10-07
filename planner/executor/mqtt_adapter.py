@@ -13,7 +13,7 @@ class MqttAdapter:
         self.username = username or os.getenv("MQTT_USERNAME")
         self.password = password or os.getenv("MQTT_PASSWORD")
 
-        self.client = mqtt.Client()
+        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         if self.username and self.password:
             self.client.username_pw_set(self.username, self.password)
 
@@ -21,10 +21,13 @@ class MqttAdapter:
         self._lock = threading.Lock()
 
         self.client.on_message = self._on_message
+        self.client.on_connect = self._on_connect
         self.client.connect(self.broker, self.port, 60)
-        # subscribe to all ack topics
-        self.client.subscribe("City/actuator/+/+/ack", qos=1)
         self.client.loop_start()
+
+    def _on_connect(self, client, userdata, flags, reason_code, properties):
+        print(f"MqttAdapter connected, subscribing to Complex/ack/#")
+        client.subscribe("Complex/ack/#", qos=1)
 
     def _on_message(self, client, userdata, msg):
         try:
@@ -32,6 +35,7 @@ class MqttAdapter:
             cmd_id = payload.get("cmd_id")
             if not cmd_id:
                 return
+            print(f"MqttAdapter received ack for {cmd_id}: {payload}")
             with self._lock:
                 ev = self._acks.get(cmd_id)
                 if ev is not None:
@@ -40,10 +44,10 @@ class MqttAdapter:
         except Exception:
             pass
 
-    def send_command(self, location, device, command, timeout=5):
-        """Send a command to `City/actuator/{location}/{device}/cmd` with a generated cmd_id and wait for ack."""
+    def send_command(self, area, unit_id, device, command, timeout=5):
+        """Send a command to `Complex/cmd/{area}/{unit_id}/{device}` with a generated cmd_id and wait for ack."""
         cmd_id = str(uuid.uuid4())
-        topic = f"City/actuator/{location}/{device}/cmd"
+        topic = f"Complex/cmd/{area}/{unit_id}/{device}"
         payload = {
             "cmd_id": cmd_id,
             "command": command,

@@ -12,8 +12,11 @@ class Collector:
         try:
             payload = json.loads(msg.payload.decode())
         except json.JSONDecodeError:
-            logger.error(f"Invalid JSON on {topic}")
-            return
+            if topic == "Complex/status/simulator":
+                payload = {"status": msg.payload.decode().strip('"')}
+            else:
+                logger.error(f"Invalid JSON on {topic}: {msg.payload.decode()}")
+                return
             
         if topic.startswith("Complex/raw/"):
             self.validator.process_raw(topic, payload)

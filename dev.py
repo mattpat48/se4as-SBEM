@@ -22,14 +22,14 @@ MOSQUITTO = "iot_mosquitto"
 SCENARIOS_FILE = ROOT / "simulator" / "scenarios.py"
 
 ALL_SERVICES = ["influxdb", "mosquitto", "grafana", "nodered", "sensors", "analyzer",
-                "ui", "planner", "simulator", "view"]
+                "ui", "planner", "simulator", "view", "monitor"]
 
 PRESETS = {
     "view": {"label": "Vista 3D (mosquitto + simulator + view)",
              "services": ["mosquitto", "simulator", "view"]},
     "mapek": {"label": "Pipeline MAPE-K senza Node-RED",
               "services": ["influxdb", "mosquitto", "grafana", "sensors", "analyzer",
-                           "planner", "ui", "simulator", "view"]},
+                           "planner", "ui", "simulator", "view", "monitor"]},
     "full": {"label": "Stack completo (Node-RED con Telegram disattivato)",
              "services": list(ALL_SERVICES)},
 }

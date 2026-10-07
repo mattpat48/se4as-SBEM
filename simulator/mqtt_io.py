@@ -85,8 +85,10 @@ class SimulatorService:
         log.info("connesso al broker, topic retained ripubblicati")
 
     def on_message(self, client, userdata, msg) -> None:
+        print(f"RAW Ricevuto {msg.topic}", flush=True)
         try:
             with self._lock:
+                log.info("Ricevuto topic: %s", msg.topic)
                 self._dispatch(msg.topic, msg.payload, time.time())
         except Exception:                       # never let a message stop the simulation
             log.exception("errore nel gestire %s", getattr(msg, "topic", "?"))
