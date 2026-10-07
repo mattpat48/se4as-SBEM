@@ -69,44 +69,6 @@ services:
     networks:
       - iot_net
 
-  # 4. Node-RED (Middleware)
-  nodered:
-    build: ./nodered
-    container_name: iot_nodered
-    ports:
-      - "1880:1880"
-    volumes:
-      - ./nodered/data:/data
-    environment:
-      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
-      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
-    depends_on:
-      - mosquitto
-      - influxdb
-    networks:
-      - iot_net
-
-  # 5. Sensors Container (Python Simulation)
-  sensors:
-    build: ./sensors
-    container_name: iot_sensors
-    depends_on:
-      - mosquitto
-    environment:
-      - INFLUXDB_URL=${INFLUXDB_URL}
-      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
-      - INFLUXDB_ORG=${INFLUXDB_ORG}
-      - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
-      - MQTT_BROKER=${MQTT_BROKER}
-      - MQTT_PORT=${MQTT_PORT}
-      - MQTT_USERNAME=${MQTT_USERNAME}
-      - MQTT_PASSWORD=${MQTT_PASSWORD}
-      - RESTORE_SESSION=${RESTORE_SESSION}
-    networks:
-      - iot_net
-    volumes:
-      - ./datastructure.py:/app/datastructure.py
-
   # 6. Analyzer Container (Python Analysis)
   analyzer:
     build: ./analyzer
@@ -127,26 +89,8 @@ services:
     networks:
       - iot_net
     volumes:
-      - ./datastructure.py:/app/datastructure.py
       - ./config:/app/config
 
-  # 7. UI Container (Streamlit Control Panel)
-  ui:
-    build: ./ui
-    container_name: iot_ui
-    ports:
-      - "8501:8501"
-    environment:
-      - MQTT_BROKER=${MQTT_BROKER}
-      - MQTT_PORT=${MQTT_PORT}
-      - MQTT_USERNAME=${MQTT_USERNAME}
-      - MQTT_PASSWORD=${MQTT_PASSWORD}
-      - RESTORE_SESSION=${RESTORE_SESSION}
-    networks:
-      - iot_net
-    volumes:
-      - ./datastructure.py:/app/datastructure.py
-      - ./config:/app/config
 
   # 8. Planner Container (Decision/Planner)
   planner:
