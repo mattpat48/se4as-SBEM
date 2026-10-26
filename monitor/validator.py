@@ -46,13 +46,25 @@ class Validator:
         
         # Extract all devices to know the structure for drift check
         self.building_sensors = {}
-        for b_id, b_data in model.get("buildings", {}).items():
-            self.building_sensors[b_id] = {}
-            for ap_id, ap_data in b_data.get("apartments", {}).items():
-                for dev_id, dev_type in ap_data.get("devices", {}).items():
-                    if dev_type not in self.building_sensors[b_id]:
-                        self.building_sensors[b_id][dev_type] = []
-                    self.building_sensors[b_id][dev_type].append(dev_id)
+        if isinstance(model.get("buildings"), dict):
+            for b_id, b_data in model.get("buildings", {}).items():
+                self.building_sensors[b_id] = {}
+                for ap_id, ap_data in b_data.get("apartments", {}).items():
+                    for dev_id, dev_type in ap_data.get("devices", {}).items():
+                        if dev_type not in self.building_sensors[b_id]:
+                            self.building_sensors[b_id][dev_type] = []
+                        self.building_sensors[b_id][dev_type].append(dev_id)
+        elif isinstance(model.get("units"), list):
+            for unit in model.get("units", []):
+                u_id = unit.get("id")
+                u_kind = unit.get("kind")
+                u_area = unit.get("area")
+                if u_kind == "building" and u_id:
+                    self.building_sensors.setdefault(u_id, {})
+                elif u_kind == "apartment" and u_area and u_id:
+                    b_map = self.building_sensors.setdefault(u_area, {})
+                    for s_type in unit.get("sensors", []):
+                        b_map.setdefault(s_type, []).append(f"{u_id}.{s_type}")
                     
         # Update monitor config
         self.monitor_config = model.get("monitor", {})
@@ -74,16 +86,11 @@ class Validator:
             
         area = parts[2]
         unit_id = parts[3]
-        device_id = parts[4]
+        topic_type = parts[4]
         
-        # Determine kind and type from payload or catalog
-        # Usually raw payload has type or we can infer it
-        typ = payload.get("type", "unknown")
-        # Ensure device config exists
+        typ = payload.get("type") or topic_type
+        device_id = payload.get("device_id") or f"{unit_id}.{typ}"
         config = self.device_catalog.get(typ, {})
-        if not config:
-            # If not in catalog, fallback to determine from ID or payload
-            pass
             
         kind = config.get("kind", "sensor")
         dev = self.get_or_create_device(device_id, area, unit_id, typ, kind)
@@ -119,30 +126,68 @@ class Validator:
             else:
                 self._recover_status(dev, "stuck")
                 
-        # Rule 4: Drift (simplified for now, full implementation requires history and neighbors)
-        # Sospensione deriva se smoke, gas o co sono alti
+        # Rule 4: Drift (compare against building neighbor median and divergence slope over drift_window_min)
         suspension = False
-        if dev.drift_check:
+        if dev.drift_check and value is not None:
             # Check for emergencies in the same unit
             for e_typ in ["smoke", "gas", "co"]:
                 e_id = f"{unit_id}.{e_typ}"
                 if e_id in self.devices:
                     e_dev = self.devices[e_id]
                     if e_dev.last_value is not None and e_dev.rest_value is not None:
-                        # Se è sopra il riposo + rumore
                         e_noise = self.device_catalog.get(e_typ, {}).get("noise", 0)
                         if e_dev.last_value > e_dev.rest_value + e_noise:
                             suspension = True
                             break
-                            
+
             if not suspension:
-                # Add to history and evaluate
-                # [A complete drift logic would calculate median of neighbors, linear regression over drift_window_min]
-                pass
+                neighbor_vals = sorted(
+                    float(other.last_value)
+                    for other in self.devices.values()
+                    if other.area == area
+                    and other.type == typ
+                    and other.unit_id != unit_id
+                    and not other.unit_id.endswith("-S")
+                    and other.last_value is not None
+                    and other.status == "ok"
+                )
+                median_neighbor = (
+                    neighbor_vals[len(neighbor_vals) // 2] if neighbor_vals else None
+                )
+                window_s = float(self.monitor_config.get("drift_window_min", 20)) * 60.0
+                dev.history.append((current_time, float(value), median_neighbor))
+                dev.history = [entry for entry in dev.history if current_time - entry[0] <= window_s]
+
+                if median_neighbor is not None and len(dev.history) >= 3:
+                    delta_map = self.monitor_config.get("drift_delta", {"temperature": 2.0, "humidity": 8.0, "co2": 300.0})
+                    slope_map = self.monitor_config.get("drift_slope", {"temperature": 0.1, "humidity": 0.5, "co2": 20.0})
+                    delta_thresh = float(delta_map.get(typ, 2.0))
+                    slope_thresh = float(slope_map.get(typ, 0.1))
+
+                    curr_diff = float(value) - median_neighbor
+                    t0, v0, m0 = dev.history[0]
+                    dt_min = (current_time - t0) / 60.0
+                    if dt_min >= 0.25:
+                        init_diff = v0 - (m0 if m0 is not None else median_neighbor)
+                        div_slope = (abs(curr_diff) - abs(init_diff)) / dt_min
+                        if abs(curr_diff) >= delta_thresh and div_slope >= slope_thresh:
+                            self._update_status(
+                                dev,
+                                "drift",
+                                f"Sensor drift detected (delta={curr_diff:.2f}, slope={div_slope:.2f}/min)",
+                            )
+                            payload["quality"] = "suspect"
+                        elif abs(curr_diff) < delta_thresh * 0.7:
+                            self._recover_status(dev, "drift")
+                        elif dev.status == "drift":
+                            payload["quality"] = "suspect"
 
         dev.last_value = value
         
         # Publish monitored
+        payload["device_id"] = device_id
+        payload["type"] = typ
+        payload["kind"] = kind
         if "quality" not in payload:
             payload["quality"] = "ok"
             
@@ -156,13 +201,22 @@ class Validator:
             
         area = parts[2]
         unit_id = parts[3]
-        device_id = parts[4]
+        topic_type = parts[4]
         
-        typ = payload.get("type", "unknown")
+        typ = payload.get("type") or topic_type
+        device_id = payload.get("device_id") or f"{unit_id}.{typ}"
         dev = self.get_or_create_device(device_id, area, unit_id, typ, "actuator")
         
         dev.last_time = payload.get("timestamp", time.time())
+        dev.last_value = payload.get("state")
+        dev.power_w = payload.get("power_w", 0.0)
         self._recover_status(dev, "offline")
+        
+        payload["device_id"] = device_id
+        payload["type"] = typ
+        payload["kind"] = "actuator"
+        if "quality" not in payload:
+            payload["quality"] = "ok"
         
         monitored_topic = topic.replace("Complex/state", "Complex/monitored")
         self.publisher.publish_monitored(monitored_topic, payload)

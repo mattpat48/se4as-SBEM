@@ -1,7 +1,26 @@
 {
   "planner": {
-    "horizon_seconds": 420,
-    "proactive_prob": 0.6
+    "horizon_seconds": 3600,
+    "proactive_prob": 0.6,
+    "power_max_w": 1600.0,
+    "min_replan_interval_s": 10.0,
+    "min_utility_gain": 0.015,
+    "weights": {
+      "comfort": 0.80,
+      "energy": 0.15,
+      "wear": 0.05
+    },
+    "eco_weights": {
+      "comfort": 0.50,
+      "energy": 0.45,
+      "wear": 0.05
+    },
+    "learning": {
+      "influx_window": "-2h",
+      "ridge_lambda": 5.0,
+      "forgetting_factor": 0.995,
+      "retrain_interval_s": 60
+    }
   },
   "rules": {
     "co2_persistence": {

@@ -40,8 +40,10 @@ class DerivedCalculator:
                     elif dev.type == "occupancy" and dev.last_value is not None:
                         b_occ += dev.last_value
                     elif dev.kind == "actuator" and getattr(dev, "power_w", 0) > 0:
-                        # Need to track power_w for actuators, not fully implemented in state parsing yet
-                        pass
+                        # Apartment power sensor already includes apartment actuators;
+                        # add building, stairwell, and EV charger actuators here
+                        if dev.unit_id == b_id or dev.unit_id.endswith("-S") or dev.unit_id.startswith("EV-"):
+                            b_power += float(dev.power_w)
 
             b_energy_balance = b_pv - b_power
             
@@ -54,10 +56,10 @@ class DerivedCalculator:
             complex_occ += b_occ
 
         # Park contribution
-        park_power = 0
+        park_power = 0.0
         for dev in self.validator.devices.values():
-            if dev.area == "park" and dev.kind == "actuator":
-                pass # add park power
+            if dev.area == "park" and dev.kind == "actuator" and getattr(dev, "power_w", 0) > 0:
+                park_power += float(dev.power_w)
                 
         complex_power += park_power
         complex_eb = complex_pv - complex_power

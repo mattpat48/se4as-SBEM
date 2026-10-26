@@ -77,28 +77,25 @@ def evaluate_risks(sensors, model):
     # 1. Fire Risk: High temperature + Smoke detection
     temp = sensors.get("temperature", 0)
     smoke = sensors.get("smoke", 0)
-    if temp > 45 or smoke > 5:
-        severity = 0
-        if smoke > 10:
+    if temp > 45 or smoke > 2:
+        if smoke > 10 or temp > 55:
             severity = 100
-        elif temp > 50:
+        elif smoke > 5 or temp > 48:
             severity = 80
-        elif smoke > 5 and temp > 35:
+        else:
             severity = 60
             
-        if severity > 0:
-            risks.append({
-                "name": "fire",
-                "severity": severity,
-                "details": {"temperature": temp, "smoke": smoke}
-            })
+        risks.append({
+            "name": "fire",
+            "severity": severity,
+            "details": {"temperature": temp, "smoke": smoke}
+        })
             
     # 2. Gas/CO Leak: High CO levels + Gas detector activation
     co = sensors.get("co", 0)
     gas = sensors.get("gas", 0)
     
-    if co > 50 or gas > 5: # %LEL
-        severity = 0
+    if co > 35 or gas > 2:  # ppm CO or %LEL methane
         if gas > 20 or co > 300:
             severity = 100
         elif gas > 10 or co > 100:
@@ -106,14 +103,20 @@ def evaluate_risks(sensors, model):
         else:
             severity = 50
             
-        if severity > 0:
-            risks.append({
-                "name": "gas_co_leak",
-                "severity": severity,
-                "details": {"co_ppm": co, "gas_lel": gas}
-            })
-            
-    # 3. Security/Panic (Abnormal Presence - simple logic for now)
-    # Could check occupancy when profile should be empty
-    
+        risks.append({
+            "name": "gas_co_leak",
+            "severity": severity,
+            "details": {"co_ppm": co, "gas_lel": gas}
+        })
+
+    # 3. Seismic / Earthquake Risk (Outdoor / Complex level)
+    seismic = sensors.get("seismic", 0)
+    if seismic >= 3.5:
+        severity = min(100, max(50, int(seismic * 15)))
+        risks.append({
+            "name": "earthquake",
+            "severity": severity,
+            "details": {"seismic_mw": seismic}
+        })
+        
     return risks

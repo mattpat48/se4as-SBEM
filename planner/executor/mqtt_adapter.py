@@ -7,9 +7,9 @@ import paho.mqtt.client as mqtt
 
 
 class MqttAdapter:
-    def __init__(self, broker=None, port=1883, username=None, password=None):
+    def __init__(self, broker=None, port=1883, username=None, password=None, connect=True):
         self.broker = broker or os.getenv("MQTT_BROKER", "mosquitto")
-        self.port = port
+        self.port = int(port or os.getenv("MQTT_PORT", 1883))
         self.username = username or os.getenv("MQTT_USERNAME")
         self.password = password or os.getenv("MQTT_PASSWORD")
 
@@ -22,11 +22,28 @@ class MqttAdapter:
 
         self.client.on_message = self._on_message
         self.client.on_connect = self._on_connect
-        self.client.connect(self.broker, self.port, 60)
-        self.client.loop_start()
+        if connect:
+            self._connect_with_retry()
+
+    def _connect_with_retry(self, retries=5, delay=2.0):
+        for attempt in range(retries):
+            try:
+                self.client.connect(self.broker, self.port, 60)
+                self.client.loop_start()
+                return
+            except Exception as e:
+                if attempt == retries - 1:
+                    print(f"MqttAdapter warning: initial connect failed ({e}), will retry on background loop")
+                    try:
+                        self.client.connect_async(self.broker, self.port, 60)
+                        self.client.loop_start()
+                    except Exception:
+                        pass
+                else:
+                    time.sleep(delay)
 
     def _on_connect(self, client, userdata, flags, reason_code, properties):
-        print(f"MqttAdapter connected, subscribing to Complex/ack/#")
+        print("MqttAdapter connected, subscribing to Complex/ack/#")
         client.subscribe("Complex/ack/#", qos=1)
 
     def _on_message(self, client, userdata, msg):
@@ -51,7 +68,8 @@ class MqttAdapter:
         payload = {
             "cmd_id": cmd_id,
             "command": command,
-            "timestamp": int(time.time())
+            "issued_by": "planner",
+            "timestamp": time.time(),
         }
 
         ev = threading.Event()

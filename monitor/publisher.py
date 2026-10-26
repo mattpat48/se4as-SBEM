@@ -64,6 +64,12 @@ class Publisher:
         else:
             return
 
+        now = time.time()
+        raw_ts = float(payload.get("timestamp", now))
+        # Clamp stale retained MQTT timestamps (e.g. > 6 days old) to now so InfluxDB 7d retention never rejects them
+        if now - raw_ts > 5 * 86400 or raw_ts - now > 3600:
+            raw_ts = now
+
         if kind in ["sensor", "derived"]:
             p = Point("readings") \
                 .tag("device_id", device_id) \
@@ -78,7 +84,7 @@ class Publisher:
             if "sim_time" in payload:
                 p = p.field("sim_time", str(payload.get("sim_time")))
                 
-            p = p.time(int(payload.get("timestamp", time.time()) * 1e9), WritePrecision.NS)
+            p = p.time(int(raw_ts * 1e9), WritePrecision.NS)
             self._add_to_buffer(p)
             
         elif kind == "actuator":
@@ -88,15 +94,47 @@ class Publisher:
                 .tag("unit_id", unit_id) \
                 .tag("type", typ)
                 
-            # Add all state fields
+            # Add all state fields (both top-level scalars and nested state dict)
+            # Ensure consistent InfluxDB field types across different actuator types:
+            # - `position` is int (0..100 for blinds, 100=open / 0=closed for window/gas_valve/smoke_vent)
+            #   plus `position_str` for string positions.
+            # - `level` is int (for ventilation/lights), while resident_display string level uses `alert_level`.
             has_fields = False
+            state_dict = payload.get("state")
+            if isinstance(state_dict, dict):
+                for sk, sv in state_dict.items():
+                    if sk == "position" and isinstance(sv, str):
+                        p = p.field("position_str", sv)
+                        p = p.field("position", 100 if sv == "open" else 0)
+                        has_fields = True
+                    elif sk == "level" and isinstance(sv, str):
+                        p = p.field("alert_level", sv)
+                        has_fields = True
+                    elif isinstance(sv, bool):
+                        p = p.field(sk, sv)
+                        has_fields = True
+                    elif isinstance(sv, (int, float)) and sk in ("position", "level", "setpoint", "max_power_w"):
+                        p = p.field(sk, int(sv))
+                        has_fields = True
+                    elif isinstance(sv, (int, float)):
+                        p = p.field(sk, float(sv))
+                        has_fields = True
+                    elif isinstance(sv, str):
+                        p = p.field(sk, sv)
+                        has_fields = True
             for k, v in payload.items():
-                if k not in ["device_id", "timestamp", "sim_time", "kind"]:
-                    if isinstance(v, (int, float, str, bool)):
+                if k not in ["device_id", "timestamp", "sim_time", "kind", "type", "quality", "state"]:
+                    if isinstance(v, bool):
+                        p = p.field(k, v)
+                        has_fields = True
+                    elif isinstance(v, (int, float)):
+                        p = p.field(k, float(v))
+                        has_fields = True
+                    elif isinstance(v, str):
                         p = p.field(k, v)
                         has_fields = True
             
-            p = p.time(int(payload.get("timestamp", time.time()) * 1e9), WritePrecision.NS)
+            p = p.time(int(raw_ts * 1e9), WritePrecision.NS)
             if has_fields:
                 self._add_to_buffer(p)
 
@@ -111,6 +149,11 @@ class Publisher:
         else:
             return
 
+        now = time.time()
+        raw_ts = float(payload.get("timestamp", now))
+        if now - raw_ts > 5 * 86400 or raw_ts - now > 3600:
+            raw_ts = now
+
         p = Point("device_health") \
             .tag("device_id", payload.get("device_id")) \
             .tag("area", area) \
@@ -118,7 +161,7 @@ class Publisher:
             .tag("type", typ) \
             .tag("status", payload.get("status")) \
             .field("details", payload.get("details", "")) \
-            .time(int(payload.get("timestamp", time.time()) * 1e9), WritePrecision.NS)
+            .time(int(raw_ts * 1e9), WritePrecision.NS)
             
         self._add_to_buffer(p)
 
@@ -143,8 +186,14 @@ class Publisher:
                     self.buffer = self.buffer[len(points_to_write):]
                 self.last_flush = time.time()
         except Exception as e:
+            err_str = str(e)
             logger.error(f"Failed to write to InfluxDB: {e}")
-            # Keep in buffer to retry later
+            # If InfluxDB rejected points due to retention policy or schema (HTTP 400/422),
+            # drop the offending batch so the buffer does not wedge indefinitely.
+            if "(422)" in err_str or "(400)" in err_str or "retention policy" in err_str:
+                with self.buffer_lock:
+                    self.buffer = self.buffer[len(points_to_write):]
+                self.last_flush = time.time()
 
     def check_flush(self):
         if time.time() - self.last_flush >= self.influx_flush_s:
