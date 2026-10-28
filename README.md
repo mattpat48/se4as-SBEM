@@ -15,9 +15,6 @@ Run these commands in the project root directory:
 # Grafana runs as user 472
 sudo chown -R 472:472 grafana/data
 
-# Node-RED runs as user 1000
-sudo chown -R 1000:1000 nodered/data
-
 # Mosquitto runs as user 1883
 sudo chown -R 1883:1883 mosquitto/
 

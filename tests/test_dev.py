@@ -1,5 +1,6 @@
 """Tests for the pure helpers of dev.py (the cross-platform stack launcher)."""
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -16,10 +17,26 @@ def test_parse_env_skips_comments_blanks_and_strips_quotes():
     assert dev.parse_env(text) == {"MQTT_USERNAME": "admin", "MQTT_PASSWORD": "s3cr=t", "EMPTY": "", "SPACED": "x"}
 
 
-def test_presets_never_include_nodered_except_full_stack():
+def compose_services() -> set:
+    """Service names declared in docker-compose.yml (two-space indented keys under `services:`)."""
+    text = (ROOT / "docker-compose.yml").read_text()
+    block = text.split("\nservices:\n", 1)[1].split("\nnetworks:", 1)[0]
+    return set(re.findall(r"^  ([a-z0-9_-]+):\s*$", block, re.MULTILINE))
+
+
+def test_all_services_match_docker_compose():
+    assert set(dev.ALL_SERVICES) == compose_services()
+
+
+def test_presets_only_use_existing_services():
     assert dev.PRESETS["view"]["services"] == ["mosquitto", "simulator", "view"]
-    assert "nodered" not in dev.PRESETS["mapek"]["services"]
-    assert "nodered" in dev.PRESETS["full"]["services"]
+    assert set(dev.PRESETS["full"]["services"]) == compose_services()
+    for preset in dev.PRESETS.values():
+        assert set(preset["services"]) <= compose_services()
+
+
+def test_urls_only_for_existing_services():
+    assert set(dev.URLS) <= compose_services()
 
 
 def test_parse_selection_accepts_spaces_and_commas_and_dedups():
@@ -30,17 +47,6 @@ def test_parse_selection_accepts_spaces_and_commas_and_dedups():
 def test_parse_selection_rejects_invalid(raw):
     with pytest.raises(ValueError):
         dev.parse_selection(raw, 5)
-
-
-def test_compose_env_silences_telegram_by_default():
-    env = dev.compose_env({"PATH": "/bin", "TELEGRAM_CHAT_ID": "-100123"}, telegram_live=False)
-    assert env["TELEGRAM_CHAT_ID"] == "0"
-    assert env["PATH"] == "/bin"
-
-
-def test_compose_env_keeps_real_chat_when_live():
-    env = dev.compose_env({"PATH": "/bin"}, telegram_live=True)
-    assert "TELEGRAM_CHAT_ID" not in env
 
 
 def test_up_command_builds_by_default():

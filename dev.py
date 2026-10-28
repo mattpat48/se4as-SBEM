@@ -21,24 +21,22 @@ ROOT = Path(__file__).resolve().parent
 MOSQUITTO = "iot_mosquitto"
 SCENARIOS_FILE = ROOT / "simulator" / "scenarios.py"
 
-ALL_SERVICES = ["influxdb", "mosquitto", "grafana", "nodered", "sensors", "analyzer",
-                "ui", "planner", "simulator", "view", "monitor"]
+ALL_SERVICES = ["influxdb", "mosquitto", "grafana", "analyzer", "planner",
+                "simulator", "monitor", "view"]
 
 PRESETS = {
     "view": {"label": "Vista 3D (mosquitto + simulator + view)",
              "services": ["mosquitto", "simulator", "view"]},
-    "mapek": {"label": "Pipeline MAPE-K senza Node-RED",
-              "services": ["influxdb", "mosquitto", "grafana", "sensors", "analyzer",
-                           "planner", "ui", "simulator", "view", "monitor"]},
-    "full": {"label": "Stack completo (Node-RED con Telegram disattivato)",
+    "mapek": {"label": "Ciclo MAPE-K + Grafana (senza vista 3D)",
+              "services": ["influxdb", "mosquitto", "grafana", "simulator", "monitor",
+                           "analyzer", "planner"]},
+    "full": {"label": "Stack completo (MAPE-K + Grafana + vista 3D)",
              "services": list(ALL_SERVICES)},
 }
 
 URLS = {
     "view": "http://localhost:8080",
     "grafana": "http://localhost:3000",
-    "ui": "http://localhost:8501",
-    "nodered": "http://localhost:1880",
     "influxdb": "http://localhost:8086",
 }
 
@@ -78,14 +76,6 @@ def parse_selection(raw: str, count: int) -> list:
             raise ValueError(f"scelta non valida: {item}")
         picked.add(int(item))
     return sorted(picked)
-
-
-def compose_env(base: dict, telegram_live: bool) -> dict:
-    """Environment for docker compose: Telegram silenced (chat id 0) unless explicitly live."""
-    env = dict(base)
-    if not telegram_live:
-        env["TELEGRAM_CHAT_ID"] = "0"
-    return env
 
 
 def up_command(services: list, build: bool = True) -> list:
@@ -212,11 +202,7 @@ class Launcher:
         return names[index] if index >= 0 else None
 
     def start(self, services: list) -> None:
-        live = False
-        if "nodered" in services:
-            print("\n!! Node-RED inoltra gli allarmi su un canale Telegram REALE.")
-            live = confirm("Usare il canale reale? (No = TELEGRAM_CHAT_ID=0)")
-        if run(up_command(services), env=compose_env(os.environ, live)) != 0:
+        if run(up_command(services)) != 0:
             print("\n!! Avvio fallito: controlla che Docker (Docker Desktop / OrbStack) sia acceso.")
             pause()
             return
@@ -274,7 +260,7 @@ class Launcher:
             elif index == 3:
                 run(["docker", "compose", "restart", name])
             else:
-                run(up_command([name]), env=compose_env(os.environ, False))
+                run(up_command([name]))
         else:
             return
         pause()
